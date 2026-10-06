@@ -1,0 +1,22 @@
+[project]
+name = "translate-grpc"
+version = "0.1.0"
+description = "gRPC server that translates text with ChatGPT"
+requires-python = ">=3.13"
+dependencies = [
+    "deep-translator[ai]>=1.11.4",
+    "googletrans>=4.0.2",
+    "grpcio>=1.84.0",
+    "python-dotenv>=1.1.0",
+    "translate-proto",
+]
+
+[project.scripts]
+translate-grpc = "translate_grpc.server:main"
+
+[tool.uv.sources]
+translate-proto = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
