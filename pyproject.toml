@@ -1,0 +1,48 @@
+# Workspace root. It isn't a package itself; it ties the members together so
+# `uv sync` installs everything into one .venv for local development and tests.
+[project]
+name = "translate"
+version = "0.1.0"
+readme = "README.md"
+authors = [
+    { name = "Felice Forgione", email = "forgione67@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "translate-grpc",
+    "translate-proto",
+]
+
+[tool.uv.workspace]
+members = ["packages/*", "services/*"]
+
+[tool.uv.sources]
+translate-grpc = { workspace = true }
+translate-proto = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.84.0",
+    "httpx2>=2.13.1",
+    "poethepoet>=0.48.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "python-dotenv>=1.1.0",
+]
+
+[tool.poe.tasks.proto]
+help = "Generate Python gRPC code from protos/ into the translate_proto package"
+cmd = """
+python -m grpc_tools.protoc -I protos
+  --python_out=packages/translate_proto/src
+  --pyi_out=packages/translate_proto/src
+  --grpc_python_out=packages/translate_proto/src
+  protos/translate_proto/translator.proto
+"""
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not live'"
+markers = ["live: calls the real OpenAI API (run with: pytest -m live)"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
