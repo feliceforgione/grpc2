@@ -80,6 +80,16 @@ uv run pytest -m live
 uv run pytest -m "" -v
 ```
 
+## Type checking
+
+The whole workspace (packages, services and tests) is checked with [mypy](https://mypy.readthedocs.io/) in strict mode. The settings live in the root `pyproject.toml`. Run from the project root:
+
+```bash
+uv run poe typecheck
+```
+
+Running `uv run mypy` does the same thing. The generated `translator_pb2*.py` files are excluded from error reporting.
+
 ## Generating gRPC code
 
 The service definition lives in `protos/translate_proto/translator.proto`. After editing it, regenerate the Python stubs (`translator_pb2.py`, `translator_pb2.pyi`, `translator_pb2_grpc.py` in `packages/translate_proto/src/translate_proto/`):
