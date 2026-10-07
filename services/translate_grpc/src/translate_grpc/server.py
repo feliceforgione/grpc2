@@ -3,9 +3,18 @@ import logging
 
 import grpc
 from translate_proto.translator_pb2_grpc import TranslationServicer, add_TranslationServicer_to_server
-from translate_proto.translator_pb2 import LANGUAGE_UNSPECIFIED, Language, TranslateRequest, TranslateResponse
-from translate_proto.languages import format_language_name
+from translate_proto.translator_pb2 import TranslateRequest, TranslateResponse
+from translate_proto.languages import format_language_name, is_supported_language
 from translate_grpc.translation import translate_text
+
+
+async def _validate_request_language(
+    language: int,
+    context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
+) -> None:
+    if not is_supported_language(language):
+        await context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                            "language must be set to a supported value")
 
 
 class Translator(TranslationServicer):
@@ -14,10 +23,7 @@ class Translator(TranslationServicer):
         request: TranslateRequest,
         context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
     ) -> TranslateResponse:
-        if (request.language == LANGUAGE_UNSPECIFIED
-                or request.language not in Language.values()):
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                "language must be set to a supported value")
+        await _validate_request_language(request.language, context)
         language = format_language_name(request.language)
         translated_text = translate_text(request.text, language)
         logging.info("%s translated to [%s] %s",
