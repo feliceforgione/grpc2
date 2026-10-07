@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import grpc
 import pytest
 
@@ -67,10 +69,9 @@ async def test_preserves_unicode_text(stub: TranslationStub) -> None:
 async def test_translator_error_returns_unknown_status(
     stub: TranslationStub, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def boom(text: str, language: str = "english") -> str:
-        raise RuntimeError("upstream failure")
-
-    monkeypatch.setattr(server, "translate_text", boom)
+    monkeypatch.setattr(
+        server, "translate_text", Mock(side_effect=RuntimeError("upstream failure"))
+    )
 
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
         await stub.Translate(
