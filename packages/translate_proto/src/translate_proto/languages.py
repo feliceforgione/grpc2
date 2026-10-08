@@ -1,17 +1,5 @@
-from enum import StrEnum
-
 from translate_proto.translator_pb2 import Language
-
-
-class LanguageName(StrEnum):
-    """Language names deep_translator expects, one per supported proto Language."""
-
-    ENGLISH = "english"
-    ITALIAN = "italian"
-    SPANISH = "spanish"
-    HUNGARIAN = "hungarian"
-    POLISH = "polish"
-    FRENCH = "french"
+from translate_proto.utils import LanguageName
 
 
 def is_supported_language(language: int) -> bool:
@@ -21,7 +9,10 @@ def is_supported_language(language: int) -> bool:
     return Language.Name(language).removeprefix("LANGUAGE_") in LanguageName.__members__
 
 
-def format_language_name(language: Language) -> LanguageName:
-    """LANGUAGE_ITALIAN -> LanguageName.ITALIAN ("italian")."""
+def convert_language_name(language: Language) -> LanguageName:
+    """Convert a proto Language value to its StrEnum LanguageName equivalent.
+
+    LANGUAGE_ITALIAN -> LanguageName.ITALIAN
+    """
     name: str = Language.Name(language)
     return LanguageName[name.removeprefix("LANGUAGE_")]
