@@ -12,3 +12,6 @@ wheels/
 # Secrets
 .env
 private/
+
+# Claude Code instructions
+CLAUDE.md
