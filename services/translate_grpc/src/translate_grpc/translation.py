@@ -3,33 +3,32 @@ from functools import cache
 
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
-from translate_proto.languages import format_language_name
-from translate_proto.translator_pb2 import LANGUAGE_ENGLISH
+from translate_proto.utils import LanguageName
 
 load_dotenv()
 apikey = os.environ["OPENAI_API_KEY"]
-ENGLISH = format_language_name(LANGUAGE_ENGLISH)
 
 
 def strip_added_quotes(text: str, translated: str) -> str:
-    """Drop quotes ChatGPT wrapped around its answer, unless the input was quoted too.
+    """Trim whitespace and drop quotes ChatGPT wrapped around its answer, unless the input was quoted too.
 
-    >>> strip_added_quotes("Hello", '"Ciao"')
+    >>> strip_added_quotes("Hello", ' "Ciao"\\n')
     'Ciao'
     >>> strip_added_quotes('"Hello"', '"Ciao"')
     '"Ciao"'
     """
+    translated = translated.strip()
     if not text.strip().startswith('"') and len(translated) >= 2 and translated[0] == translated[-1] == '"':
         return translated[1:-1]
     return translated
 
-
 @cache
 def _get_translator(target: str) -> ChatGptTranslator:
     """Build the translator for a target language once and reuse it on later calls."""
-    return ChatGptTranslator(api_key=apikey, source=ENGLISH, target=target)
+    return ChatGptTranslator(api_key=apikey, source=LanguageName.ENGLISH, target=target)
 
 
-def translate_text(text: str, language: str = ENGLISH) -> str:
-    translated = _get_translator(language).translate(text=text).strip()
+def translate_text(text: str, language: LanguageName = LanguageName.ENGLISH) -> str:
+    translated = _get_translator(language).translate(text=text)
     return strip_added_quotes(text, translated)
+
