@@ -4,7 +4,7 @@ import logging
 import grpc
 from translate_proto.translator_pb2_grpc import TranslationServicer, add_TranslationServicer_to_server
 from translate_proto.translator_pb2 import TranslateRequest, TranslateResponse
-from translate_proto.languages import format_language_name, is_supported_language
+from translate_proto.languages import convert_language_name, is_supported_language
 from translate_grpc.translation import translate_text
 
 
@@ -24,7 +24,7 @@ class Translator(TranslationServicer):
         context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
     ) -> TranslateResponse:
         await _validate_request_language(request.language, context)
-        language = format_language_name(request.language)
+        language = convert_language_name(request.language)
         translated_text = translate_text(request.text, language)
         logging.info("%s translated to [%s] %s",
                      request.text, language, translated_text)

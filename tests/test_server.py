@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 import grpc
 import pytest
+from deep_translator import ChatGptTranslator
 
 from translate_proto.translator_pb2 import (
     LANGUAGE_ENGLISH,
@@ -16,61 +17,67 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 
 
 @pytest.fixture
-def translate_text() -> Iterator[Mock]:
-    """Replace the OpenAI-backed translator with a mock that echoes its input."""
-    with patch(
-        "translate_grpc.server.translate_text",
-        side_effect=lambda text, language: f"[{language}] {text}",
-    ) as mock:
+def translate() -> Iterator[Mock]:
+    """Mock `ChatGptTranslator.translate` so the real translator is built but never calls OpenAI.
+
+    autospec=True keeps the method signature, so each call receives the translator
+    instance as its first argument;
+    """
+    with patch.object(ChatGptTranslator, "translate", autospec=True) as mock:
         yield mock
 
 
 @pytest.fixture
-async def stub(translate_text: Mock, channel: grpc.aio.Channel) -> TranslationStub:
-    """Client stub for a server whose translator is mocked (depends on `translate_text` to patch first)."""
-    return TranslationStub(channel)  
+async def client(translate: Mock, channel: grpc.aio.Channel) -> TranslationStub:
+    """Client stub for a server whose translator is mocked (depends on `translate` to patch first)."""
+    return TranslationStub(channel)  # type: ignore[no-untyped-call]
 
 
 async def test_translate_passes_language_name(
-    stub: TranslationStub, translate_text: Mock
+    client: TranslationStub, translate: Mock
 ) -> None:
+    translate.return_value = "ciao"
     request = TranslateRequest(text="hello", language=LANGUAGE_ITALIAN)
 
-    response = await stub.Translate(request)
+    response = await client.Translate(request)
 
-    assert response.translated_text == "[italian] hello"
-    translate_text.assert_called_once_with("hello", "italian")
+    assert response.translated_text == "ciao"
+    translate.assert_called_once()
 
 
 @pytest.mark.parametrize("language", [LANGUAGE_UNSPECIFIED, 99])
 async def test_missing_or_unknown_language_is_invalid_argument(
-    stub: TranslationStub, translate_text: Mock, language: Language
+    client: TranslationStub, translate: Mock, language: Language
 ) -> None:
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
-        await stub.Translate(TranslateRequest(text="ciao", language=language))
+        await client.Translate(TranslateRequest(text="ciao", language=language))
 
     assert exc_info.value.code() == grpc.StatusCode.INVALID_ARGUMENT
-    translate_text.assert_not_called()
+    translate.assert_not_called()
 
 
-async def test_preserves_unicode_text(stub: TranslationStub) -> None:
+async def test_preserves_unicode_text(
+    client: TranslationStub, translate: Mock
+) -> None:
     text = "¿Szép?👋"
+    translate.return_value = text
 
-    response = await stub.Translate(
+    response = await client.Translate(
         TranslateRequest(text=text, language=LANGUAGE_HUNGARIAN)
     )
 
-    assert response.translated_text == f"[hungarian] {text}"
+    assert response.translated_text == text
 
 
 async def test_translator_error_returns_unknown_status(
-    stub: TranslationStub, translate_text: Mock
+    client: TranslationStub, translate: Mock
 ) -> None:
-    translate_text.side_effect = RuntimeError("upstream failure")
+    translate.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
-        await stub.Translate(
+        await client.Translate(
             TranslateRequest(text="hello", language=LANGUAGE_ENGLISH)
         )
 
     assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
+    
