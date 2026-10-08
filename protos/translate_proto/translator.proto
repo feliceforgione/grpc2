@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package translator.v1;
 
+// When adding a language here, also add a matching member to the LanguageName
+// StrEnum in packages/translate_proto/src/translate_proto/utils.py and regenerate.
 enum Language {
     LANGUAGE_UNSPECIFIED = 0;
     LANGUAGE_ENGLISH = 1;
