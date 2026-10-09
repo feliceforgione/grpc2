@@ -8,27 +8,26 @@ from translate_proto.languages import convert_language_name, is_supported_langua
 from translate_grpc.translation import translate_text
 
 
-async def _validate_request_language(
-    language: int,
-    context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
-) -> None:
-    if not is_supported_language(language):
-        await context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                            "language must be set to a supported value")
-
-
 class Translator(TranslationServicer):
     async def Translate(
         self,
         request: TranslateRequest,
         context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
     ) -> TranslateResponse:
-        await _validate_request_language(request.language, context)
+        await self._validate_request_language(request.language, context)
         language = convert_language_name(request.language)
         translated_text = translate_text(request.text, language)
         logging.info("%s translated to [%s] %s",
                      request.text, language, translated_text)
         return TranslateResponse(translated_text=translated_text)
+    
+    async def _validate_request_language(self,
+        language: int,
+        context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
+    ) -> None:
+        if not is_supported_language(language):
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                                "language must be set to a supported value")
 
 
 async def serve() -> None:
