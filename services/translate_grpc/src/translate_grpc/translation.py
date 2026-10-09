@@ -22,13 +22,13 @@ def strip_added_quotes(text: str, translated: str) -> str:
         return translated[1:-1]
     return translated
 
-@cache
-def _get_translator(target: str) -> ChatGptTranslator:
-    """Build the translator for a target language once and reuse it on later calls."""
-    return ChatGptTranslator(api_key=apikey, source=LanguageName.ENGLISH, target=target)
 
-
-def translate_text(text: str, language: LanguageName = LanguageName.ENGLISH) -> str:
-    translated = _get_translator(language).translate(text=text)
+def translate_text(text: str, target_language: LanguageName = LanguageName.ENGLISH) -> str:
+    translated = _get_translator(target_language).translate(text=text)
     return strip_added_quotes(text, translated)
 
+
+@cache
+def _get_translator(target_language: str) -> ChatGptTranslator:
+    """Build the translator for a target language once and reuse it on later calls."""
+    return ChatGptTranslator(api_key=apikey, source=LanguageName.ENGLISH, target=target_language)
