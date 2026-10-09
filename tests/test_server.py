@@ -29,13 +29,14 @@ def translate() -> Iterator[Mock]:
 
 @pytest.fixture
 async def client(translate: Mock, channel: grpc.aio.Channel) -> TranslationStub:
-    """Client stub for a server whose translator is mocked (depends on `translate` to patch first)."""
+    """Client stub for a server whose translator is mocked.
+
+    Depends on `translate` so the patch is in place first.
+    """
     return TranslationStub(channel)  # type: ignore[no-untyped-call]
 
 
-async def test_translate_passes_language_name(
-    client: TranslationStub, translate: Mock
-) -> None:
+async def test_translate_passes_language_name(client: TranslationStub, translate: Mock) -> None:
     translate.return_value = "ciao"
     request = TranslateRequest(text="hello", language=LANGUAGE_ITALIAN)
 
@@ -56,15 +57,11 @@ async def test_missing_or_unknown_language_is_invalid_argument(
     translate.assert_not_called()
 
 
-async def test_preserves_unicode_text(
-    client: TranslationStub, translate: Mock
-) -> None:
+async def test_preserves_unicode_text(client: TranslationStub, translate: Mock) -> None:
     text = "¿Szép?👋"
     translate.side_effect = lambda _, text: text
 
-    response = await client.Translate(
-        TranslateRequest(text=text, language=LANGUAGE_HUNGARIAN)
-    )
+    response = await client.Translate(TranslateRequest(text=text, language=LANGUAGE_HUNGARIAN))
 
     assert response.translated_text == text
 
@@ -75,9 +72,6 @@ async def test_translator_error_returns_unknown_status(
     translate.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
-        await client.Translate(
-            TranslateRequest(text="hello", language=LANGUAGE_ENGLISH)
-        )
+        await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ENGLISH))
 
     assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
-    

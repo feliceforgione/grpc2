@@ -30,6 +30,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "python-dotenv>=1.1.0",
+    "ruff>=0.16.10",
 ]
 
 [tool.poe.tasks.proto]
@@ -67,3 +68,22 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = ["deep_translator", "deep_translator.*", "googletrans", "googletrans.*"]
 ignore_missing_imports = true
+
+[tool.poe.tasks.format]
+help = "Format the workspace with ruff"
+cmd = "ruff format"
+
+[tool.poe.tasks.lint]
+help = "Lint the workspace with ruff"
+cmd = "ruff check"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py", "*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["translate_grpc", "translate_proto"]

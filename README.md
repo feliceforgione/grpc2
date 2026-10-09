@@ -90,6 +90,20 @@ uv run poe typecheck
 
 Running `uv run mypy` does the same thing. The generated `translator_pb2*.py` files are excluded from error reporting.
 
+## Linting and formatting
+
+The workspace is linted and formatted with [Ruff](https://docs.astral.sh/ruff/). The settings live in the root `pyproject.toml`, and the generated `translator_pb2*` files are excluded. Run from the project root:
+
+```bash
+# Check for lint errors
+uv run poe lint
+
+# Format the code
+uv run poe format
+```
+
+`uv run ruff check --fix` fixes lint errors that Ruff can fix on its own, such as unsorted imports. CI runs `ruff check` and `ruff format --check`, and fails if any file has lint errors or isn't formatted.
+
 ## Generating gRPC code
 
 The service definition lives in `protos/translate_proto/translator.proto`. After editing it, regenerate the Python stubs (`translator_pb2.py`, `translator_pb2.pyi`, `translator_pb2_grpc.py` in `packages/translate_proto/src/translate_proto/`):

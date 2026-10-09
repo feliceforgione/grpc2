@@ -3,6 +3,7 @@ from functools import cache
 
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
+
 from translate_proto.utils import LanguageName
 
 load_dotenv()
@@ -10,7 +11,9 @@ apikey = os.environ["OPENAI_API_KEY"]
 
 
 def strip_added_quotes(text: str, translated: str) -> str:
-    """Trim whitespace and drop quotes ChatGPT wrapped around its answer, unless the input was quoted too.
+    """Trim whitespace and drop quotes ChatGPT wrapped around its answer.
+
+    Quotes are kept when the input text was quoted too.
 
     >>> strip_added_quotes("Hello", ' "Ciao"\\n')
     'Ciao'
@@ -18,7 +21,11 @@ def strip_added_quotes(text: str, translated: str) -> str:
     '"Ciao"'
     """
     translated = translated.strip()
-    if not text.strip().startswith('"') and len(translated) >= 2 and translated[0] == translated[-1] == '"':
+    if (
+        not text.strip().startswith('"')
+        and len(translated) >= 2
+        and translated[0] == translated[-1] == '"'
+    ):
         return translated[1:-1]
     return translated
 

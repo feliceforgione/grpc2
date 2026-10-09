@@ -2,10 +2,14 @@ import asyncio
 import logging
 
 import grpc
-from translate_proto.translator_pb2_grpc import TranslationServicer, add_TranslationServicer_to_server
-from translate_proto.translator_pb2 import TranslateRequest, TranslateResponse
-from translate_proto.languages import convert_language_name, is_supported_language
+
 from translate_grpc.translation import translate_text
+from translate_proto.languages import convert_language_name, is_supported_language
+from translate_proto.translator_pb2 import TranslateRequest, TranslateResponse
+from translate_proto.translator_pb2_grpc import (
+    TranslationServicer,
+    add_TranslationServicer_to_server,
+)
 
 
 class Translator(TranslationServicer):
@@ -17,17 +21,18 @@ class Translator(TranslationServicer):
         await self._validate_request_language(request.language, context)
         language = convert_language_name(request.language)
         translated_text = translate_text(request.text, language)
-        logging.info("%s translated to [%s] %s",
-                     request.text, language, translated_text)
+        logging.info("%s translated to [%s] %s", request.text, language, translated_text)
         return TranslateResponse(translated_text=translated_text)
-    
-    async def _validate_request_language(self,
+
+    async def _validate_request_language(
+        self,
         language: int,
         context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
     ) -> None:
         if not is_supported_language(language):
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                                "language must be set to a supported value")
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT, "language must be set to a supported value"
+            )
 
 
 async def serve() -> None:
