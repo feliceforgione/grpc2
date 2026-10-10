@@ -7,5 +7,6 @@
       "source.fixAll.ruff": "explicit"
     }
   },
-  "ruff.importStrategy": "fromEnvironment"
+  "ruff.importStrategy": "fromEnvironment",
+  "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy"
 }

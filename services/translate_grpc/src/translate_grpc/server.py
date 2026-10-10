@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import grpc
+import grpc.aio
 
 from translate_grpc.translation import translate_text
 from translate_proto.languages import convert_language_name, is_supported_language

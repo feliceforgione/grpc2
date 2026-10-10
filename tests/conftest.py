@@ -2,6 +2,7 @@ import os
 from collections.abc import AsyncIterator
 
 import grpc
+import grpc.aio
 import pytest
 from dotenv import load_dotenv
 

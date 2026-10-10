@@ -9,6 +9,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "translate-api",
     "translate-grpc",
     "translate-proto",
 ]
@@ -17,6 +18,7 @@ dependencies = [
 members = ["packages/*", "services/*"]
 
 [tool.uv.sources]
+translate-api = { workspace = true }
 translate-grpc = { workspace = true }
 translate-proto = { workspace = true }
 
@@ -58,7 +60,11 @@ cmd = "mypy"
 python_version = "3.13"
 strict = true
 files = ["packages", "services", "tests"]
-mypy_path = ["packages/translate_proto/src", "services/translate_grpc/src"]
+mypy_path = [
+    "packages/translate_proto/src",
+    "services/translate_grpc/src",
+    "services/translate_api/src",
+]
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
@@ -86,4 +92,4 @@ extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py", "*.md"]
 select = ["E", "F", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["translate_grpc", "translate_proto"]
+known-first-party = ["translate_api", "translate_grpc", "translate_proto"]

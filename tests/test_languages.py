@@ -1,6 +1,10 @@
 import pytest
 
-from translate_proto.languages import convert_language_name, is_supported_language
+from translate_proto.languages import (
+    convert_language_name,
+    convert_to_proto_language,
+    is_supported_language,
+)
 from translate_proto.translator_pb2 import (
     LANGUAGE_ENGLISH,
     LANGUAGE_FRENCH,
@@ -42,6 +46,21 @@ def test_every_language_name_has_a_proto_language(name: LanguageName) -> None:
 )
 def test_convert_language_name(language: Language, name: str) -> None:
     assert convert_language_name(language) == name
+
+
+@pytest.mark.parametrize(
+    ("name", "language"),
+    [
+        (LanguageName.ENGLISH, LANGUAGE_ENGLISH),
+        (LanguageName.ITALIAN, LANGUAGE_ITALIAN),
+        (LanguageName.SPANISH, LANGUAGE_SPANISH),
+        (LanguageName.HUNGARIAN, LANGUAGE_HUNGARIAN),
+        (LanguageName.POLISH, LANGUAGE_POLISH),
+        (LanguageName.FRENCH, LANGUAGE_FRENCH),
+    ],
+)
+def test_convert_to_proto_language(name: LanguageName, language: Language) -> None:
+    assert convert_to_proto_language(name) == language
 
 
 @pytest.mark.parametrize("language", [LANGUAGE_UNSPECIFIED, 99])

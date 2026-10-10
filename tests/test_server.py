@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from unittest.mock import Mock, patch
 
 import grpc
+import grpc.aio
 import pytest
 from deep_translator import ChatGptTranslator
 

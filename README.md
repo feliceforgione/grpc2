@@ -56,11 +56,11 @@ The API is published at http://127.0.0.1:8000/. The gRPC server is only reachabl
 
 ### Environment variables:
 
-| Variable                | Default           | Description                |
-| ----------------------- | ----------------- | -------------------------- |
-| `TRANSLATE_GRPC_TARGET` | `localhost:50051` | Address of the gRPC server |
-| `TRANSLATE_API_HOST`    | `127.0.0.1`       | Host the API binds to      |
-| `TRANSLATE_API_PORT`    | `8000`            | Port the API listens on    |
+| Variable                        | Default           | Description                |
+| ------------------------------- | ----------------- | -------------------------- |
+| `TRANSLATE_GRPC_SERVER_ADDRESS` | `localhost:50051` | Address of the gRPC server |
+| `TRANSLATE_API_HOST`            | `127.0.0.1`       | Host the API binds to      |
+| `TRANSLATE_API_PORT`            | `8000`            | Port the API listens on    |
 
 ## Testing
 
