@@ -44,8 +44,8 @@ python -m grpc_tools.protoc -I protos
 """
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-m 'not live'"
+testpaths = ["services", "packages"]
+addopts = "-m 'not live' --import-mode=importlib"
 markers = ["live: calls the real OpenAI API (run with: pytest -m live)"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -57,7 +57,7 @@ cmd = "mypy"
 [tool.mypy]
 python_version = "3.13"
 strict = true
-files = ["packages", "services", "tests"]
+files = ["packages", "services"]
 mypy_path = ["packages/translate_proto/src", "services/translate_grpc/src"]
 explicit_package_bases = true
 
