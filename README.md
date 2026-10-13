@@ -64,10 +64,21 @@ The API is published at http://127.0.0.1:8000/. The gRPC server is only reachabl
 
 ## Testing
 
-The tests in `tests/` start the gRPC server in-process on a free port and call it through a real gRPC client. By default the ChatGPT translator is replaced with a fake, so the tests run offline and need no API key:
+Each service and package keeps its tests in its own `tests/` folder:
+
+| Folder                           | What it tests                                                   |
+| -------------------------------- | --------------------------------------------------------------- |
+| `services/translate_grpc/tests/` | The gRPC server, started in-process on a free port              |
+| `packages/translate_proto/tests/`| The shared language mappings                                    |
+
+By default the ChatGPT translator is replaced with a fake, so the tests run offline and need no API key:
 
 ```bash
+# Run every test
 uv run pytest -v
+
+# Run one service's tests
+uv run pytest services/translate_grpc
 ```
 
 One test, marked `live`, calls the real OpenAI API to translate "Hello" into Italian. It is skipped by default and needs an `OPENAI_API_KEY` in `.env`:

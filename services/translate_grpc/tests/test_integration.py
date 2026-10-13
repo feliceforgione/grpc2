@@ -2,6 +2,7 @@ import os
 import string
 
 import grpc
+import grpc.aio
 import pytest
 
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
