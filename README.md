@@ -42,7 +42,16 @@ uv run translate-grpc
 uv run translate-api
 ```
 
-Then open http://127.0.0.1:8000/ to use the website, or http://127.0.0.1:8000/docs for the interactive API docs.
+While working on the API, you can run it with auto-reload instead, so it restarts whenever you save a change:
+
+```bash
+uv run uvicorn translate_api.main:app --reload
+```
+
+Then open http://127.0.0.1:8000/ to use the website. FastAPI also serves API documentation generated from the code:
+
+- http://127.0.0.1:8000/docs: interactive docs (Swagger UI), where you can send requests to each endpoint
+- http://127.0.0.1:8000/redoc: read-only reference docs (ReDoc)
 
 ### Running with Docker
 
@@ -68,6 +77,7 @@ Each service and package keeps its tests in its own `tests/` folder:
 
 | Folder                           | What it tests                                                   |
 | -------------------------------- | --------------------------------------------------------------- |
+| `services/translate_api/tests/`  | FastAPI routes, called in-process with FastAPI's `TestClient`   |
 | `services/translate_grpc/tests/` | The gRPC server, started in-process on a free port              |
 | `packages/translate_proto/tests/`| The shared language mappings                                    |
 
@@ -78,6 +88,7 @@ By default the ChatGPT translator is replaced with a fake, so the tests run offl
 uv run pytest -v
 
 # Run one service's tests
+uv run pytest services/translate_api
 uv run pytest services/translate_grpc
 ```
 

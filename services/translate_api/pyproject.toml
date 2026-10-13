@@ -1,0 +1,22 @@
+[project]
+name = "translate-api"
+version = "0.1.0"
+description = "FastAPI app that serves the website and forwards translations to the gRPC server"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.143.0",
+    "grpcio>=1.84.0",
+    "pydantic>=2.14.0",
+    "translate-proto",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+translate-api = "translate_api.main:main"
+
+[tool.uv.sources]
+translate-proto = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
