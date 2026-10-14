@@ -7,7 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 from grpc.aio import AioRpcError, insecure_channel
 
-from translate_api.grpc_errors import grpc_error_response
+from translate_api.grpc_errors import handle_grpc_error_response
 from translate_api.routers import translate_router
 from translate_proto.translator_pb2_grpc import TranslationStub
 
@@ -27,7 +27,7 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(
     title="Translate API",
     lifespan=lifespan,
-    exception_handlers={AioRpcError: grpc_error_response},
+    exception_handlers={AioRpcError: handle_grpc_error_response},
 )
 app.include_router(translate_router)
 

@@ -92,6 +92,19 @@ def test_invalid_body_is_rejected_without_calling_grpc(
     translate.assert_not_awaited()
 
 
+def test_empty_text_error_points_at_text_field(client: TestClient, translate: AsyncMock) -> None:
+    """An empty `text` gets a 422 whose single error names the `text` field as too short."""
+    response = client.post(TRANSLATE_URL, json={"text": "", "language": "italian"})
+
+    assert response.status_code == 422
+    [error] = response.json()["detail"]
+    assert error["type"] == "string_too_short"
+    assert error["loc"] == ["body", "text"]
+    assert error["input"] == ""
+    assert error["ctx"] == {"min_length": 1}
+    translate.assert_not_awaited()
+
+
 def test_grpc_invalid_argument_returns_400_with_details(
     client: TestClient, translate: AsyncMock
 ) -> None:

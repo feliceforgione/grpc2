@@ -8,9 +8,8 @@ from translate_proto.translator_pb2 import TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 from translate_proto.utils import LanguageName
 
-GRPC_TIMEOUT_SECONDS = 30.0
+GRPC_TIMEOUT_SECONDS = 5.0
 
-# Calls the gRPC translation service; main.py turns its gRPC errors into HTTP error responses.
 translate_router = APIRouter(prefix="/api/translate", tags=["Translation"])
 
 
