@@ -11,8 +11,12 @@ from translate_api.main import app
 from translate_api.routers.translate import GRPC_TIMEOUT_SECONDS, get_translate_grpc_client
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest, TranslateResponse
 from translate_proto.translator_pb2_grpc import TranslationStub
+from translate_proto.utils import LanguageName
 
 TRANSLATE_URL = "/api/translate/"
+VALID_TEXT_TO_TRANSLATE = "hello"
+VALID_LANGUAGE = LanguageName.ITALIAN
+UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS = "language must be set to a supported value"
 
 
 @pytest.fixture
@@ -43,13 +47,14 @@ def test_translate_returns_translated_text(
     mock_translate_grpc_client.Translate.return_value = TranslateResponse(translated_text="ciao")
 
     response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": "hello", "language": "italian"}
+        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
     )
 
     assert response.status_code == 200
     assert response.json() == {"translated_text": "ciao"}
     mock_translate_grpc_client.Translate.assert_awaited_once_with(
-        TranslateRequest(text="hello", language=LANGUAGE_ITALIAN), timeout=GRPC_TIMEOUT_SECONDS
+        TranslateRequest(text=VALID_TEXT_TO_TRANSLATE, language=LANGUAGE_ITALIAN),
+        timeout=GRPC_TIMEOUT_SECONDS,
     )
 
 
@@ -68,11 +73,14 @@ def test_api_lifespan_creates_translation_stub_for_dependency() -> None:
 @pytest.mark.parametrize(
     "body",
     [
-        {"text": "", "language": "italian"},
-        {"text": "hello", "language": "klingon"},
-        {"text": "hello", "language": "ITALIAN"},
-        {"text": "hello"},
-        {"language": "italian"},
+        {"text": "", "language": VALID_LANGUAGE},  # text has min_length=1
+        {"text": VALID_TEXT_TO_TRANSLATE, "language": "klingon"},  # not a LanguageName value
+        {
+            "text": VALID_TEXT_TO_TRANSLATE,
+            "language": VALID_LANGUAGE.upper(),
+        },  # LanguageName is lowercase
+        {"text": VALID_TEXT_TO_TRANSLATE},  # language is required
+        {"language": VALID_LANGUAGE},  # text is required
     ],
     ids=[
         "empty-text",
@@ -94,12 +102,12 @@ def test_invalid_request_body_is_rejected_without_calling_grpc(
     mock_translate_grpc_client.Translate.assert_not_awaited()
 
 
-def test_empty_text_error_points_at_text_field(
+def test_empty_text_returns_422_naming_text_as_too_short(
     api_client_with_grpc_mock: TestClient, mock_translate_grpc_client: Mock
 ) -> None:
     """An empty `text` gets a 422 whose single error names the `text` field as too short."""
     response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": "", "language": "italian"}
+        TRANSLATE_URL, json={"text": "", "language": VALID_LANGUAGE}
     )
 
     assert response.status_code == 422
@@ -121,16 +129,16 @@ def test_grpc_invalid_argument_returns_400_with_details(
         StatusCode.INVALID_ARGUMENT,
         Metadata(),
         Metadata(),
-        details="language must be set to a supported value",
+        details=UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS,
         debug_error_string=None,
     )
 
     response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": "hello", "language": "italian"}
+        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
     )
 
     assert response.status_code == 400
-    assert response.json() == {"detail": "language must be set to a supported value"}
+    assert response.json() == {"detail": UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS}
 
 
 def test_grpc_invalid_argument_without_details_returns_generic_400(
@@ -142,7 +150,7 @@ def test_grpc_invalid_argument_without_details_returns_generic_400(
     )
 
     response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": "hello", "language": "italian"}
+        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
     )
 
     assert response.status_code == 400
@@ -170,7 +178,7 @@ def test_grpc_server_errors_hide_details(
     )
 
     response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": "hello", "language": "italian"}
+        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
     )
 
     assert response.status_code == http_status
