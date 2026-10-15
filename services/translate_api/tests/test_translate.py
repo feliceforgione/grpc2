@@ -122,6 +122,7 @@ def test_grpc_invalid_argument_returns_400_with_details(
         Metadata(),
         Metadata(),
         details="language must be set to a supported value",
+        debug_error_string=None,
     )
 
     response = api_client_with_grpc_mock.post(
@@ -137,7 +138,7 @@ def test_grpc_invalid_argument_without_details_returns_generic_400(
 ) -> None:
     """A gRPC INVALID_ARGUMENT with no message becomes a 400 with a generic message."""
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
-        StatusCode.INVALID_ARGUMENT, Metadata(), Metadata()
+        StatusCode.INVALID_ARGUMENT, Metadata(), Metadata(), details=None, debug_error_string=None
     )
 
     response = api_client_with_grpc_mock.post(
@@ -165,7 +166,7 @@ def test_grpc_server_errors_hide_details(
 ) -> None:
     """Server-side gRPC errors map to 5xx statuses and never expose the server's message."""
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
-        code, Metadata(), Metadata(), details="secret internal details"
+        code, Metadata(), Metadata(), details="secret internal details", debug_error_string=None
     )
 
     response = api_client_with_grpc_mock.post(
