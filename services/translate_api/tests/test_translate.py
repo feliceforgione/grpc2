@@ -5,7 +5,7 @@ import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
 from grpc import StatusCode
-from grpc.aio import AioRpcError, Metadata
+from grpc.aio import AioRpcError
 
 from translate_api.main import app
 from translate_api.routers.translate import GRPC_TIMEOUT_SECONDS, get_translate_grpc_client
@@ -17,6 +17,7 @@ TRANSLATE_URL = "/api/translate/"
 VALID_TEXT_TO_TRANSLATE = "hello"
 VALID_LANGUAGE = LanguageName.ITALIAN
 UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS = "language must be set to a supported value"
+VALID_JSON_BODY = {"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
 
 
 @pytest.fixture
@@ -29,7 +30,9 @@ def mock_translate_grpc_client() -> Iterator[Mock]:
 
 
 @pytest.fixture
-def api_client_with_grpc_mock(mock_translate_grpc_client: Mock) -> TestClient:
+def web_server_client_with_server_side_grpc_client_mocked(
+    mock_translate_grpc_client: Mock,
+) -> TestClient:
     """Client for the app with the mock gRPC client in place.
 
     Not used as a context manager, so the lifespan never opens a real gRPC channel.
@@ -38,22 +41,26 @@ def api_client_with_grpc_mock(mock_translate_grpc_client: Mock) -> TestClient:
 
 
 def test_translate_returns_translated_text(
-    api_client_with_grpc_mock: TestClient, mock_translate_grpc_client: Mock
+    web_server_client_with_server_side_grpc_client_mocked: TestClient,
+    mock_translate_grpc_client: Mock,
 ) -> None:
     """A valid request is forwarded to gRPC and the translation is returned as JSON.
 
     Also checks the language name is converted to the proto enum and the timeout is passed.
     """
-    mock_translate_grpc_client.Translate.return_value = TranslateResponse(translated_text="ciao")
+    mock_translate_grpc_client.Translate.return_value = TranslateResponse(
+        translated_text="mock italian"
+    )
 
-    response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
+    response = web_server_client_with_server_side_grpc_client_mocked.post(
+        TRANSLATE_URL, json={"text": "mock", "language": LanguageName.ITALIAN}
     )
 
     assert response.status_code == 200
-    assert response.json() == {"translated_text": "ciao"}
+    assert response.json() == {"translated_text": "mock italian"}
+    # The route must turn the "italian" LanguageName it received into the proto enum
     mock_translate_grpc_client.Translate.assert_awaited_once_with(
-        TranslateRequest(text=VALID_TEXT_TO_TRANSLATE, language=LANGUAGE_ITALIAN),
+        TranslateRequest(text="mock", language=LANGUAGE_ITALIAN),
         timeout=GRPC_TIMEOUT_SECONDS,
     )
 
@@ -73,7 +80,7 @@ def test_api_lifespan_creates_translation_stub_for_dependency() -> None:
 @pytest.mark.parametrize(
     "body",
     [
-        {"text": "", "language": VALID_LANGUAGE},  # text has min_length=1
+        {"text": "", "language": VALID_LANGUAGE},  # text needs min_length=1
         {"text": VALID_TEXT_TO_TRANSLATE, "language": "klingon"},  # not a LanguageName value
         {
             "text": VALID_TEXT_TO_TRANSLATE,
@@ -91,23 +98,25 @@ def test_api_lifespan_creates_translation_stub_for_dependency() -> None:
     ],
 )
 def test_invalid_request_body_is_rejected_without_calling_grpc(
-    api_client_with_grpc_mock: TestClient,
+    web_server_client_with_server_side_grpc_client_mocked: TestClient,
     mock_translate_grpc_client: Mock,
     body: dict[str, str],
 ) -> None:
-    """A request body that fails validation gets a 422 from FastAPI and never reaches gRPC."""
-    response = api_client_with_grpc_mock.post(TRANSLATE_URL, json=body)
+    """A request body that fails validation gets a 422 from FastAPI and never reaches translate rpc service."""
+    response = web_server_client_with_server_side_grpc_client_mocked.post(TRANSLATE_URL, json=body)
 
     assert response.status_code == 422
     mock_translate_grpc_client.Translate.assert_not_awaited()
 
 
 def test_empty_text_returns_422_naming_text_as_too_short(
-    api_client_with_grpc_mock: TestClient, mock_translate_grpc_client: Mock
+    web_server_client_with_server_side_grpc_client_mocked: TestClient,
+    mock_translate_grpc_client: Mock,
 ) -> None:
-    """An empty `text` gets a 422 whose single error names the `text` field as too short."""
-    response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": "", "language": VALID_LANGUAGE}
+    """An empty `text` gets a 422 response with one error in `detail`: `text` is too short."""
+    empty_string = ""
+    response = web_server_client_with_server_side_grpc_client_mocked.post(
+        TRANSLATE_URL, json={"text": empty_string, "language": VALID_LANGUAGE}
     )
 
     assert response.status_code == 422
@@ -120,21 +129,22 @@ def test_empty_text_returns_422_naming_text_as_too_short(
 
 
 def test_grpc_invalid_argument_returns_400_with_details(
-    api_client_with_grpc_mock: TestClient, mock_translate_grpc_client: Mock
+    web_server_client_with_server_side_grpc_client_mocked: TestClient,
+    mock_translate_grpc_client: Mock,
 ) -> None:
     """A gRPC INVALID_ARGUMENT becomes a 400 that passes the server's message to the client."""
     # The mock rejects every request, as the server would if it didn't support a language
     # the API accepts (e.g. one added to LanguageName before the gRPC server is updated).
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
         StatusCode.INVALID_ARGUMENT,
-        Metadata(),
-        Metadata(),
+        Mock(),
+        Mock(),
         details=UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS,
         debug_error_string=None,
     )
 
-    response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
+    response = web_server_client_with_server_side_grpc_client_mocked.post(
+        TRANSLATE_URL, json=VALID_JSON_BODY
     )
 
     assert response.status_code == 400
@@ -142,15 +152,16 @@ def test_grpc_invalid_argument_returns_400_with_details(
 
 
 def test_grpc_invalid_argument_without_details_returns_generic_400(
-    api_client_with_grpc_mock: TestClient, mock_translate_grpc_client: Mock
+    web_server_client_with_server_side_grpc_client_mocked: TestClient,
+    mock_translate_grpc_client: Mock,
 ) -> None:
     """A gRPC INVALID_ARGUMENT with no message becomes a 400 with a generic message."""
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
-        StatusCode.INVALID_ARGUMENT, Metadata(), Metadata(), details=None, debug_error_string=None
+        StatusCode.INVALID_ARGUMENT, Mock(), Mock(), details=None, debug_error_string=None
     )
 
-    response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
+    response = web_server_client_with_server_side_grpc_client_mocked.post(
+        TRANSLATE_URL, json=VALID_JSON_BODY
     )
 
     assert response.status_code == 400
@@ -166,19 +177,19 @@ def test_grpc_invalid_argument_without_details_returns_generic_400(
         (StatusCode.INTERNAL, 502),
     ],
 )
-def test_grpc_server_errors_hide_details(
-    api_client_with_grpc_mock: TestClient,
+def test_web_server_replaces_grpc_server_error_details_with_generic_message_before_returning_to_client(
+    web_server_client_with_server_side_grpc_client_mocked: TestClient,
     mock_translate_grpc_client: Mock,
     code: StatusCode,
     http_status: int,
 ) -> None:
-    """Server-side gRPC errors map to 5xx statuses and never expose the server's message."""
+    """Server-side gRPC errors map to 5xx statuses and never expose the server's error message to the server client."""
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
-        code, Metadata(), Metadata(), details="secret internal details", debug_error_string=None
+        code, Mock(), Mock(), details="secret internal details", debug_error_string=None
     )
 
-    response = api_client_with_grpc_mock.post(
-        TRANSLATE_URL, json={"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
+    response = web_server_client_with_server_side_grpc_client_mocked.post(
+        TRANSLATE_URL, json=VALID_JSON_BODY
     )
 
     assert response.status_code == http_status
