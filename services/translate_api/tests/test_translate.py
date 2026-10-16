@@ -102,7 +102,7 @@ def test_invalid_request_body_is_rejected_without_calling_grpc(
     mock_translate_grpc_client: Mock,
     body: dict[str, str],
 ) -> None:
-    """A request body that fails validation gets a 422 from FastAPI and never reaches translate rpc service."""
+    """A request body that fails validation gets 422 response & never reaches translate rpc."""
     response = web_server_client_with_server_side_grpc_client_mocked.post(TRANSLATE_URL, json=body)
 
     assert response.status_code == 422
@@ -177,13 +177,13 @@ def test_grpc_invalid_argument_without_details_returns_generic_400(
         (StatusCode.INTERNAL, 502),
     ],
 )
-def test_web_server_replaces_grpc_server_error_details_with_generic_message_before_returning_to_client(
+def test_web_server_replaces_grpc_server_error_details_with_generic_message_before_return_to_client(
     web_server_client_with_server_side_grpc_client_mocked: TestClient,
     mock_translate_grpc_client: Mock,
     code: StatusCode,
     http_status: int,
 ) -> None:
-    """Server-side gRPC errors map to 5xx statuses and never expose the server's error message to the server client."""
+    """Server gRPC errors map to 5xx statuses & never expose server error message to web client."""
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
         code, Mock(), Mock(), details="secret internal details", debug_error_string=None
     )
