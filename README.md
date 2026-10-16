@@ -126,6 +126,16 @@ uv run poe format
 
 `uv run ruff check --fix` fixes lint errors that Ruff can fix on its own, such as unsorted imports. CI runs `ruff check` and `ruff format --check`, and fails if any file has lint errors or isn't formatted.
 
+## Pre-commit hook
+
+A [pre-commit](https://pre-commit.com/) hook runs the same checks as CI (`ruff check`, `ruff format --check`, `mypy` and `pytest`) before every commit, and blocks the commit if any of them fail. The hooks live in `.pre-commit-config.yaml`. Install the hook once after cloning:
+
+```bash
+uv run pre-commit install
+```
+
+To run the checks without committing, use `uv run pre-commit run --all-files`. To skip them for a single commit, use `git commit --no-verify`.
+
 ## Generating gRPC code
 
 The service definition lives in `protos/translate_proto/translator.proto`. After editing it, regenerate the Python stubs (`translator_pb2.py`, `translator_pb2.pyi`, `translator_pb2_grpc.py` in `packages/translate_proto/src/translate_proto/`):
