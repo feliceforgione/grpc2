@@ -16,7 +16,6 @@ from translate_proto.utils import LanguageName
 TRANSLATE_URL = "/api/translate/"
 VALID_TEXT_TO_TRANSLATE = "hello"
 VALID_LANGUAGE = LanguageName.ITALIAN
-UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS = "language must be set to a supported value"
 VALID_JSON_BODY = {"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
 
 
@@ -109,7 +108,7 @@ def test_invalid_request_body_is_rejected_without_calling_grpc(
     mock_translate_grpc_client.Translate.assert_not_awaited()
 
 
-def test_empty_text_returns_422_naming_text_as_too_short(
+def test_empty_text_returns_422_flagging_text_as_too_short(
     web_server_client_with_server_side_grpc_client_mocked: TestClient,
     mock_translate_grpc_client: Mock,
 ) -> None:
@@ -135,11 +134,12 @@ def test_grpc_invalid_argument_returns_400_with_details(
     """A gRPC INVALID_ARGUMENT becomes a 400 that passes the server's message to the client."""
     # The mock rejects every request, as the server would if it didn't support a language
     # the API accepts (e.g. one added to LanguageName before the gRPC server is updated).
+    unsupported_language_grpc_error_details = "language must be set to a supported value"
     mock_translate_grpc_client.Translate.side_effect = AioRpcError(
         StatusCode.INVALID_ARGUMENT,
         Mock(),
         Mock(),
-        details=UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS,
+        details=unsupported_language_grpc_error_details,
         debug_error_string=None,
     )
 
@@ -148,7 +148,7 @@ def test_grpc_invalid_argument_returns_400_with_details(
     )
 
     assert response.status_code == 400
-    assert response.json() == {"detail": UNSUPPORTED_LANGUAGE_GRPC_ERROR_DETAILS}
+    assert response.json() == {"detail": unsupported_language_grpc_error_details}
 
 
 def test_grpc_invalid_argument_without_details_returns_generic_400(
