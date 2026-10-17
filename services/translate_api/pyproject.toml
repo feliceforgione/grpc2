@@ -7,6 +7,7 @@ dependencies = [
     "fastapi>=0.143.0",
     "grpcio>=1.84.0",
     "pydantic>=2.14.0",
+    "starlette>=1.7.0",
     "translate-proto",
     "uvicorn[standard]>=0.54.0",
 ]
