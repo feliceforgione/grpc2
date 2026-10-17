@@ -1638,6 +1638,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "grpcio" },
     { name = "pydantic" },
+    { name = "starlette" },
     { name = "translate-proto" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1647,6 +1648,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.143.0" },
     { name = "grpcio", specifier = ">=1.84.0" },
     { name = "pydantic", specifier = ">=2.14.0" },
+    { name = "starlette", specifier = ">=1.7.0" },
     { name = "translate-proto", editable = "packages/translate_proto" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]
