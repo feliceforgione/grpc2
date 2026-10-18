@@ -3,7 +3,7 @@
 A translation service split into microservices. The project is a [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/): each part is its own package with its own `pyproject.toml` and dependencies.
 
 - **gRPC server** (`services/translate_grpc/`): translates text with ChatGPT and listens on `localhost:50051`.
-- **HTTP API** (`services/translate_api/`): a FastAPI app that forwards requests to the gRPC server. It also serves the website (`translate_api/website/`) at http://127.0.0.1:8000/.
+- **HTTP API** (`services/web_api_server/`): a FastAPI app that forwards requests to the gRPC server. It also serves the website (`web_api_server/website/`) at http://127.0.0.1:8000/.
 - **Shared gRPC code** (`packages/translate_proto/`): the Python code generated from `protos/translate_proto/translator.proto`, plus the error and language helpers both services use.
 
 ![The translation website translating "What is for dinner?" into French](screenshot.png)
@@ -39,13 +39,13 @@ uv run translate-grpc
 
 ```bash
 # Terminal 2: the HTTP API and website
-uv run translate-api
+uv run web-api-server
 ```
 
 While working on the API, you can run it with auto-reload instead, so it restarts whenever you save a change:
 
 ```bash
-uv run uvicorn translate_api.main:app --reload
+uv run uvicorn web_api_server.main:app --reload
 ```
 
 Then open http://127.0.0.1:8000/ to use the website. FastAPI also serves API documentation generated from the code:
@@ -68,8 +68,8 @@ The API is published at http://127.0.0.1:8000/. The gRPC server is only reachabl
 | Variable                        | Default           | Description                |
 | ------------------------------- | ----------------- | -------------------------- |
 | `TRANSLATE_GRPC_SERVER_ADDRESS` | `localhost:50051` | Address of the gRPC server |
-| `TRANSLATE_API_HOST`            | `127.0.0.1`       | Host the API binds to      |
-| `TRANSLATE_API_PORT`            | `8000`            | Port the API listens on    |
+| `WEB_API_SERVER_HOST`           | `127.0.0.1`       | Host the API binds to      |
+| `WEB_API_SERVER_PORT`           | `8000`            | Port the API listens on    |
 
 ## Testing
 
@@ -77,7 +77,7 @@ Each service and package keeps its tests in its own `tests/` folder:
 
 | Folder                           | What it tests                                                   |
 | -------------------------------- | --------------------------------------------------------------- |
-| `services/translate_api/tests/`  | FastAPI routes, called in-process with FastAPI's `TestClient`   |
+| `services/web_api_server/tests/` | FastAPI routes, called in-process with FastAPI's `TestClient`   |
 | `services/translate_grpc/tests/` | The gRPC server, started in-process on a free port              |
 | `packages/translate_proto/tests/`| The shared language mappings                                    |
 
@@ -88,7 +88,7 @@ By default the ChatGPT translator is replaced with a fake, so the tests run offl
 uv run pytest -v
 
 # Run one service's tests
-uv run pytest services/translate_api
+uv run pytest services/web_api_server
 uv run pytest services/translate_grpc
 ```
 

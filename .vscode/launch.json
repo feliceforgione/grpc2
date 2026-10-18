@@ -2,11 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Translate API (FastAPI)",
+      "name": "Web API Server (FastAPI)",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["translate_api.main:app", "--reload"],
+      "args": ["web_api_server.main:app", "--reload"],
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
       "jinja": true
