@@ -7,11 +7,11 @@ from fastapi.testclient import TestClient
 from grpc import StatusCode
 from grpc.aio import AioRpcError
 
-from translate_api.main import app
-from translate_api.routers.translate import GRPC_TIMEOUT_SECONDS, get_translate_grpc_client
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest, TranslateResponse
 from translate_proto.translator_pb2_grpc import TranslationStub
 from translate_proto.utils import LanguageName
+from web_api_server.main import app
+from web_api_server.routers.translate import GRPC_TIMEOUT_SECONDS, get_translate_grpc_client
 
 TRANSLATE_URL = "/api/translate/"
 VALID_TEXT_TO_TRANSLATE = "hello"
