@@ -53,6 +53,12 @@ Then open http://127.0.0.1:8000/ to use the website. FastAPI also serves API doc
 - http://127.0.0.1:8000/docs: interactive docs (Swagger UI), where you can send requests to each endpoint
 - http://127.0.0.1:8000/redoc: read-only reference docs (ReDoc)
 
+To check that the API is up, call its health route. It returns `{"status": "ok"}` without calling the gRPC server, so it answers even when the gRPC server is down:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
 ### Running with Docker
 
 Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` package, and the libraries that service depends on. With your `.env` file in place, run from the project root:
