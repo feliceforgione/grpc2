@@ -9,6 +9,7 @@ dependencies = [
     "grpcio>=1.84.0",
     "python-dotenv>=1.1.0",
     "translate-proto",
+    "utils",
 ]
 
 [project.scripts]
@@ -16,6 +17,7 @@ translate-grpc = "translate_grpc.server:main"
 
 [tool.uv.sources]
 translate-proto = { workspace = true }
+utils = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]

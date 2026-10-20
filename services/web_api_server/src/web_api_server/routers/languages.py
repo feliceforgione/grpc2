@@ -6,7 +6,7 @@ It lists the languages the translate route accepts, read straight from LanguageN
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 
 languages_router = APIRouter(prefix="/api/languages", tags=["Languages"])
 

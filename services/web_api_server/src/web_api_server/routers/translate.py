@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from translate_proto.languages import convert_to_proto_language
 from translate_proto.translator_pb2 import TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 
 GRPC_TIMEOUT_SECONDS = 5.0
 

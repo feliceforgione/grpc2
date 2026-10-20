@@ -1,5 +1,5 @@
 from translate_proto.translator_pb2 import Language
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 
 
 def is_supported_language(language: int) -> bool:

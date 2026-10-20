@@ -4,7 +4,7 @@ from functools import cache
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
 
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 
 load_dotenv()
 apikey = os.environ["OPENAI_API_KEY"]

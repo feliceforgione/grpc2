@@ -11,6 +11,7 @@ requires-python = ">=3.13"
 dependencies = [
     "translate-grpc",
     "translate-proto",
+    "utils",
     "web-api-server",
 ]
 
@@ -20,6 +21,7 @@ members = ["packages/*", "services/*"]
 [tool.uv.sources]
 translate-grpc = { workspace = true }
 translate-proto = { workspace = true }
+utils = { workspace = true }
 web-api-server = { workspace = true }
 
 [dependency-groups]
@@ -63,6 +65,7 @@ strict = true
 files = ["packages", "services"]
 mypy_path = [
     "packages/translate_proto/src",
+    "packages/utils/src",
     "services/translate_grpc/src",
     "services/web_api_server/src",
 ]
@@ -93,4 +96,4 @@ extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py", "*.md"]
 select = ["E", "F", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["translate_grpc", "translate_proto", "web_api_server"]
+known-first-party = ["translate_grpc", "translate_proto", "utils", "web_api_server"]

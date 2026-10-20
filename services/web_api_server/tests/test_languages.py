@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from grpc import StatusCode
 from grpc.aio import AioRpcError
 
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 from web_api_server.main import app
 from web_api_server.routers.translate import get_translate_grpc_client
 
@@ -28,6 +28,11 @@ def test_languages_route_returns_every_language_name_value() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"languages": [language.value for language in LanguageName]}
+
+    # Check that value language is returned
+    valid_language = "polish"
+    assert LanguageName.POLISH in response.json()["languages"]
+    assert valid_language in response.json()["languages"]
 
 
 def test_languages_route_returns_languages_when_grpc_server_is_unreachable(
