@@ -7,8 +7,6 @@ A translation service split into microservices. The project is a [uv workspace](
 - **Shared gRPC code** (`packages/translate_proto/`): the Python code generated from `protos/translate_proto/translator.proto`, plus the error and language helpers both services use.
 - **Shared utilities** (`packages/utils/`): helpers used across the workspace, such as the `LanguageName` enum of supported languages.
 
-![The translation website translating "hello" into Italian, showing "Ciao." and the time the request took](homepage_screenshot.png)
-
 ### Installation
 
 1. Install the dependencies, including the dev tools used to regenerate gRPC code:
