@@ -13,7 +13,6 @@ def test_languages_route_returns_every_language_name_value() -> None:
     assert response.status_code == 200
     assert response.json() == {"languages": [language.value for language in LanguageName]}
 
-    # Check that value language is returned
-    valid_language = "polish"
-    assert LanguageName.POLISH in response.json()["languages"]
-    assert valid_language in response.json()["languages"]
+    # LanguageName is similar to the Language (proto) with the proto returning integer values.
+    # Ensure that the response is using the LanguageName StrEnum which are string values.
+    assert LanguageName.POLISH.value == "polish"
