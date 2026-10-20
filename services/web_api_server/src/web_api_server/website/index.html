@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Translate</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script type="module" src="/static/js/translate.js"></script>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <span class="logo" aria-hidden="true">文A</span>
+        <div>
+          <h1>Translate</h1>
+          <p class="tagline">Turn English text into another language in a few seconds.</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <form id="translate-form" class="card">
+        <div class="toolbar">
+          <span class="language-chip">English</span>
+          <span class="arrow" aria-hidden="true">→</span>
+          <label class="visually-hidden" for="language-select">Language</label>
+          <select id="language-select" name="language" required disabled>
+            <option value="">Loading languages…</option>
+          </select>
+        </div>
+
+        <div class="panels">
+          <div class="panel">
+            <label class="panel-label" for="text-input">Text to translate</label>
+            <textarea
+              id="text-input"
+              name="text"
+              rows="8"
+              placeholder="Type or paste text here"
+              required
+            ></textarea>
+          </div>
+
+          <div class="panel panel-output">
+            <label class="panel-label" for="translation-output">Translation</label>
+            <textarea
+              id="translation-output"
+              rows="8"
+              placeholder="Your translation will appear here"
+              readonly
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="actions">
+          <p id="elapsed-time" class="elapsed-time" aria-live="polite"></p>
+          <button id="translate-button" type="submit" disabled>
+            <span class="spinner" aria-hidden="true"></span>
+            Translate
+          </button>
+        </div>
+      </form>
+
+      <p id="error-message" class="error" role="alert" hidden></p>
+    </main>
+
+    <footer>
+      Powered by FastAPI and gRPC · <a href="/docs">API docs</a>
+    </footer>
+  </body>
+</html>

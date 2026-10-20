@@ -32,3 +32,10 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+      - id: jest
+        name: website tests (jest)
+        entry: npm --prefix services/web_api_server test
+        language: system
+        pass_filenames: false
+        files: ^services/web_api_server/(src/web_api_server/website/|tests/js/|package(-lock)?\.json$)

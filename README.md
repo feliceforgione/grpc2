@@ -7,7 +7,7 @@ A translation service split into microservices. The project is a [uv workspace](
 - **Shared gRPC code** (`packages/translate_proto/`): the Python code generated from `protos/translate_proto/translator.proto`, plus the error and language helpers both services use.
 - **Shared utilities** (`packages/utils/`): helpers used across the workspace, such as the `LanguageName` enum of supported languages.
 
-![The translation website translating "What is for dinner?" into French](screenshot.png)
+![The translation website translating "hello" into Italian, showing "Ciao." and the time the request took](homepage_screenshot.png)
 
 ### Installation
 
@@ -107,6 +107,16 @@ uv run pytest -m live
 
 # Run every test, live included
 uv run pytest -m "" -v
+```
+
+### Website tests
+
+The translation page's script (`services/web_api_server/src/web_api_server/website/static/js/translate.js`) is tested with [Jest](https://jestjs.io/) in a simulated browser (jsdom). `fetch` is replaced with mocked server responses, so neither server needs to be running. The tests live in `services/web_api_server/tests/js/` and need Node.js 24:
+
+```bash
+cd services/web_api_server
+npm install
+npm test
 ```
 
 ## Type checking

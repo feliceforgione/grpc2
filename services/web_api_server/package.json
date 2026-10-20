@@ -1,0 +1,19 @@
+{
+  "name": "web-api-server-website",
+  "private": true,
+  "description": "Jest tests for the translation page served by the web API server",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "roots": [
+      "<rootDir>/tests/js"
+    ]
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2"
+  }
+}
