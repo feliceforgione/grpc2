@@ -1,0 +1,14 @@
+# Keep the build context to what the Dockerfiles copy, and keep secrets out of it.
+**/.venv
+**/__pycache__
+**/*.py[oc]
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+**/tests
+.git
+.github
+.vscode
+.env
+private/
