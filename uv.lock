@@ -12,6 +12,7 @@ members = [
     "translate",
     "translate-grpc",
     "translate-proto",
+    "utils",
     "web-api-server",
 ]
 
@@ -1592,6 +1593,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "translate-grpc" },
     { name = "translate-proto" },
+    { name = "utils" },
     { name = "web-api-server" },
 ]
 
@@ -1613,6 +1615,7 @@ dev = [
 requires-dist = [
     { name = "translate-grpc", editable = "services/translate_grpc" },
     { name = "translate-proto", editable = "packages/translate_proto" },
+    { name = "utils", editable = "packages/utils" },
     { name = "web-api-server", editable = "services/web_api_server" },
 ]
 
@@ -1640,6 +1643,7 @@ dependencies = [
     { name = "grpcio" },
     { name = "python-dotenv" },
     { name = "translate-proto" },
+    { name = "utils" },
 ]
 
 [package.metadata]
@@ -1649,6 +1653,7 @@ requires-dist = [
     { name = "grpcio", specifier = ">=1.84.0" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "translate-proto", editable = "packages/translate_proto" },
+    { name = "utils", editable = "packages/utils" },
 ]
 
 [[package]]
@@ -1658,12 +1663,14 @@ source = { editable = "packages/translate_proto" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },
+    { name = "utils" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "grpcio", specifier = ">=1.84.0" },
     { name = "protobuf", specifier = ">=7.36.2" },
+    { name = "utils", editable = "packages/utils" },
 ]
 
 [[package]]
@@ -1704,6 +1711,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/e3/05/b17359e1cefb4f909
 wheels = [
     { url = "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl", hash = "sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3", size = 135717, upload-time = "2026-09-15T19:29:34.577Z" },
 ]
+
+[[package]]
+name = "utils"
+version = "0.1.0"
+source = { editable = "packages/utils" }
 
 [[package]]
 name = "uvicorn"
@@ -1831,6 +1843,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "starlette" },
     { name = "translate-proto" },
+    { name = "utils" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -1841,6 +1854,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.14.0" },
     { name = "starlette", specifier = ">=1.7.0" },
     { name = "translate-proto", editable = "packages/translate_proto" },
+    { name = "utils", editable = "packages/utils" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]
 

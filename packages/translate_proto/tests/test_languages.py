@@ -15,7 +15,7 @@ from translate_proto.translator_pb2 import (
     LANGUAGE_UNSPECIFIED,
     Language,
 )
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 
 SUPPORTED_LANGUAGE = [value for value in Language.values() if value != LANGUAGE_UNSPECIFIED]
 

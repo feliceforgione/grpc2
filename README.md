@@ -5,6 +5,7 @@ A translation service split into microservices. The project is a [uv workspace](
 - **gRPC server** (`services/translate_grpc/`): translates text with ChatGPT and listens on `localhost:50051`.
 - **HTTP API** (`services/web_api_server/`): a FastAPI app that forwards requests to the gRPC server. It also serves the website (`web_api_server/website/`) at http://127.0.0.1:8000/.
 - **Shared gRPC code** (`packages/translate_proto/`): the Python code generated from `protos/translate_proto/translator.proto`, plus the error and language helpers both services use.
+- **Shared utilities** (`packages/utils/`): helpers used across the workspace, such as the `LanguageName` enum of supported languages.
 
 ![The translation website translating "What is for dinner?" into French](screenshot.png)
 
@@ -61,7 +62,7 @@ curl http://127.0.0.1:8000/health
 
 ### Running with Docker
 
-Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` package, and the libraries that service depends on. With your `.env` file in place, run from the project root:
+Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` and `utils` packages, and the libraries that service depends on. With your `.env` file in place, run from the project root:
 
 ```bash
 docker compose up --build

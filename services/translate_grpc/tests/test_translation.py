@@ -5,7 +5,7 @@ import pytest
 from deep_translator import ChatGptTranslator
 
 from translate_grpc.translation import translate_text
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 
 
 @pytest.fixture

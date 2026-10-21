@@ -9,7 +9,7 @@ from grpc.aio import AioRpcError
 
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest, TranslateResponse
 from translate_proto.translator_pb2_grpc import TranslationStub
-from translate_proto.utils import LanguageName
+from utils.language_name import LanguageName
 from web_api_server.main import app
 from web_api_server.routers.translate import GRPC_TIMEOUT_SECONDS, get_translate_grpc_client
 
