@@ -27,14 +27,23 @@ async def unhealthy_grpc_server_address() -> AsyncIterator[str]:
 
 
 async def test_health_check_reports_serving(channel: grpc.aio.Channel) -> None:
-    """`Health/Check` about the whole server, which reports SERVING."""
+    """The real server answers a `Health/Check` call with SERVING.
+
+    Tests the server side: that the health service is registered and set to SERVING.
+    The request leaves `service` empty, which asks about the server as a whole
+    rather than about one named service.
+    """
     response = await HealthStub(channel).Check(HealthCheckRequest())
 
     assert response.status == HealthCheckResponse.SERVING
 
 
 async def test_check_grpc_server_health_when_serving(server_address: str) -> None:
-    """Returns True when the server reports SERVING."""
+    """Returns True when the server reports SERVING.
+
+    Tests the client side: the helper the container health check runs, which
+    turns the server's answer into a bool.
+    """
     assert await check_grpc_server_health(server_address)
 
 
@@ -60,7 +69,7 @@ async def test_check_grpc_server_health_when_unreachable() -> None:
         (False, 1),  # any non-zero exit code marks it unhealthy
     ],
 )
-def test_main_exit_code(is_serving: bool, exit_code: int) -> None:
+def test_healthcheck_main_exit_code(is_serving: bool, exit_code: int) -> None:
     """`main()` exits 0 when the server is serving and 1 when it isn't."""
     with patch(
         "translate_grpc.healthcheck.check_grpc_server_health", AsyncMock(return_value=is_serving)
