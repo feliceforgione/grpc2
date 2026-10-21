@@ -1,10 +1,8 @@
-from collections.abc import Iterator
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import grpc
 import grpc.aio
 import pytest
-from deep_translator import ChatGptTranslator
 
 from translate_proto.translator_pb2 import (
     LANGUAGE_ENGLISH,
@@ -15,17 +13,6 @@ from translate_proto.translator_pb2 import (
     TranslateRequest,
 )
 from translate_proto.translator_pb2_grpc import TranslationStub
-
-
-@pytest.fixture
-def translate() -> Iterator[Mock]:
-    """Mock `ChatGptTranslator.translate` so the real translator is built but never calls OpenAI.
-
-    autospec=True keeps the method signature, so each call receives the translator
-    instance as its first argument;
-    """
-    with patch.object(ChatGptTranslator, "translate", autospec=True) as mock:
-        yield mock
 
 
 @pytest.fixture

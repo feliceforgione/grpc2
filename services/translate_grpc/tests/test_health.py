@@ -1,0 +1,71 @@
+from collections.abc import AsyncIterator
+from unittest.mock import AsyncMock, patch
+
+import grpc
+import grpc.aio
+import pytest
+from grpc_health.v1._async import HealthServicer
+from grpc_health.v1.health_pb2 import HealthCheckRequest, HealthCheckResponse
+from grpc_health.v1.health_pb2_grpc import HealthStub, add_HealthServicer_to_server
+
+from translate_grpc.healthcheck import check_grpc_server_health, main
+
+
+@pytest.fixture
+async def unhealthy_grpc_server_address() -> AsyncIterator[str]:
+    """Run a server that is up but reports NOT_SERVING, and yield its address."""
+    grpc_server = grpc.aio.server()
+    health_servicer = HealthServicer()
+    await health_servicer.set("", HealthCheckResponse.NOT_SERVING)
+    add_HealthServicer_to_server(health_servicer, grpc_server)
+    port = grpc_server.add_insecure_port("127.0.0.1:0")
+    await grpc_server.start()
+    try:
+        yield f"127.0.0.1:{port}"
+    finally:
+        await grpc_server.stop(None)
+
+
+async def test_health_check_reports_serving(channel: grpc.aio.Channel) -> None:
+    """`Health/Check` about the whole server, which reports SERVING."""
+    response = await HealthStub(channel).Check(HealthCheckRequest())
+
+    assert response.status == HealthCheckResponse.SERVING
+
+
+async def test_check_grpc_server_health_when_serving(server_address: str) -> None:
+    """Returns True when the server reports SERVING."""
+    assert await check_grpc_server_health(server_address)
+
+
+async def test_check_grpc_server_health_when_not_serving(
+    unhealthy_grpc_server_address: str,
+) -> None:
+    """Returns False when the server is up but reports NOT_SERVING."""
+    assert not await check_grpc_server_health(unhealthy_grpc_server_address)
+
+
+async def test_check_grpc_server_health_when_unreachable() -> None:
+    """Returns False when nothing listens at the address.
+
+    Port 1 is reserved and has no listener, so the connection is refused.
+    """
+    assert not await check_grpc_server_health("127.0.0.1:1")
+
+
+@pytest.mark.parametrize(
+    ("is_serving", "exit_code"),
+    [
+        (True, 0),  # Docker marks the container healthy on exit code 0
+        (False, 1),  # any non-zero exit code marks it unhealthy
+    ],
+)
+def test_main_exit_code(is_serving: bool, exit_code: int) -> None:
+    """`main()` exits 0 when the server is serving and 1 when it isn't."""
+    with patch(
+        "translate_grpc.healthcheck.check_grpc_server_health", AsyncMock(return_value=is_serving)
+    ):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+    assert exc_info.value.code == exit_code

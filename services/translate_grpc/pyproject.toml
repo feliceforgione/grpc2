@@ -7,6 +7,7 @@ dependencies = [
     "deep-translator[ai]>=1.11.4",
     "googletrans>=4.0.2",
     "grpcio>=1.84.0",
+    "grpcio-health-checking>=1.84.0",
     "python-dotenv>=1.1.0",
     "translate-proto",
     "utils",
@@ -14,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 translate-grpc = "translate_grpc.server:main"
+translate-grpc-healthcheck = "translate_grpc.healthcheck:main"
 
 [tool.uv.sources]
 translate-proto = { workspace = true }
