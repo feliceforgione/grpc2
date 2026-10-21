@@ -7,11 +7,18 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from grpc.aio import AioRpcError, insecure_channel
 
 from translate_proto.translator_pb2_grpc import TranslationStub
 from web_api_server.grpc_errors import handle_grpc_error_response
-from web_api_server.routers import health_router, languages_router, translate_router
+from web_api_server.routers import (
+    WEBSITE_STATIC_DIR,
+    health_router,
+    languages_router,
+    translate_router,
+    website_router,
+)
 
 TRANSLATE_GRPC_SERVER_ADDRESS = os.environ.get("TRANSLATE_GRPC_SERVER_ADDRESS", "localhost:50051")
 WEB_API_SERVER_HOST = os.environ.get("WEB_API_SERVER_HOST", "127.0.0.1")
@@ -34,6 +41,8 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(languages_router)
 app.include_router(translate_router)
+app.include_router(website_router)
+app.mount("/static", StaticFiles(directory=WEBSITE_STATIC_DIR), name="static")
 
 
 def main() -> None:
