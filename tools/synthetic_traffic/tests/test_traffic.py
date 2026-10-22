@@ -1,3 +1,5 @@
+import logging
+from pathlib import Path
 from random import Random
 from unittest.mock import Mock, call, patch
 
@@ -8,9 +10,10 @@ from synthetic_traffic.traffic import (
     SECONDS_PER_HOUR,
     TARGET_LANGUAGES,
     TRANSLATE_ROUTE,
+    configure_logging,
     create_request_times,
+    is_translation_request_successful,
     run_synthetic_traffic,
-    send_translation_request,
 )
 from utils.language_name import LanguageName
 
@@ -54,38 +57,38 @@ def test_plan_request_times_spreads_requests_within_each_hour(
     )
 
 
-def test_send_translation_request_posts_text_and_language() -> None:
+def test_is_translation_request_successful_posts_text_and_language() -> None:
     """The request body matches what the translate route expects."""
     mock_http_client = Mock()
     mock_http_client.post.return_value = Mock(is_success=True, status_code=200)
 
-    send_translation_request(mock_http_client, VALID_TEXT, VALID_LANGUAGE)
+    assert is_translation_request_successful(mock_http_client, VALID_TEXT, VALID_LANGUAGE)
 
     mock_http_client.post.assert_called_once_with(
         TRANSLATE_ROUTE, json={"text": VALID_TEXT, "language": VALID_LANGUAGE}
     )
 
 
-def test_send_translation_request_logs_connection_errors_instead_of_raising(
+def test_is_translation_request_successful_logs_connection_errors_instead_of_raising(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A failed request is logged, so the run carries on with the next one."""
     mock_http_client = Mock()
     mock_http_client.post.side_effect = ConnectError("mock connection error")
 
-    send_translation_request(mock_http_client, VALID_TEXT, VALID_LANGUAGE)
+    assert not is_translation_request_successful(mock_http_client, VALID_TEXT, VALID_LANGUAGE)
 
     assert "mock connection error" in caplog.text
 
 
-def test_send_translation_request_logs_error_status_codes(
+def test_is_translation_request_successful_logs_error_status_codes(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A non-2xx response is logged as a warning with its status code."""
     mock_http_client = Mock()
     mock_http_client.post.return_value = Mock(is_success=False, status_code=503)
 
-    send_translation_request(mock_http_client, VALID_TEXT, VALID_LANGUAGE)
+    assert not is_translation_request_successful(mock_http_client, VALID_TEXT, VALID_LANGUAGE)
 
     assert "HTTP 503" in caplog.text
 
@@ -102,8 +105,11 @@ def test_run_synthetic_traffic_waits_until_each_request_time() -> None:
         mock_http_client.post.return_value = Mock(is_success=True, status_code=200)
 
         valid_base_url = "http://127.0.0.1:8000"
-        run_synthetic_traffic(valid_base_url, [10.0, 30.0], [VALID_TEXT], Random(0))
+        successful_request_count = run_synthetic_traffic(
+            valid_base_url, [10.0, 30.0], [VALID_TEXT], Random(0)
+        )
 
+    assert successful_request_count == 2
     mock_client.assert_called_once()
     assert mock_client.call_args.kwargs["base_url"] == valid_base_url
     assert mock_sleep.call_args_list == [call(10.0), call(30.0)]
@@ -111,3 +117,39 @@ def test_run_synthetic_traffic_waits_until_each_request_time() -> None:
     sent_body = mock_http_client.post.call_args.kwargs["json"]
     assert sent_body["text"] == VALID_TEXT
     assert sent_body["language"] in TARGET_LANGUAGES
+
+
+def test_run_synthetic_traffic_counts_only_successful_requests() -> None:
+    """Requests that get an error status are sent but not counted as successful."""
+    with (
+        patch("synthetic_traffic.traffic.Client") as mock_client,
+        patch("synthetic_traffic.traffic.sleep"),
+    ):
+        mock_http_client = mock_client.return_value.__enter__.return_value
+        mock_http_client.post.return_value = Mock(is_success=False, status_code=503)
+
+        successful_request_count = run_synthetic_traffic(
+            "http://127.0.0.1:8000", [10.0, 30.0], [VALID_TEXT], Random(0)
+        )
+
+    assert mock_http_client.post.call_count == 2
+    assert successful_request_count == 0
+
+
+def test_configure_logging_appends_to_the_log_file(tmp_path: Path) -> None:
+    """With a log file path, log lines are written to that file as well as the terminal."""
+    log_file_path = tmp_path / "synthetic_traffic.log"
+    logger = logging.getLogger()
+    original_handlers = logger.handlers[:]
+    logger.handlers.clear()
+    try:
+        configure_logging(log_file_path)
+        logging.getLogger("synthetic_traffic.traffic").info("mock log line")
+        for handler in logger.handlers:
+            handler.flush()
+    finally:
+        for handler in logger.handlers:
+            handler.close()
+        logger.handlers[:] = original_handlers
+
+    assert "mock log line" in log_file_path.read_text()

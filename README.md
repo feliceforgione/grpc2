@@ -81,7 +81,7 @@ On every push to `main`, once the tests, type check and lint pass, CI rebuilds t
 
 ### Synthetic traffic
 
-`uv run synthetic-traffic` sends translation requests to the API's `POST /api/translate/` route, the same route the website's form uses. Each hour it sends a random number of requests (0 to 5 by default) at random moments within the hour, each translating a random word from [`words.csv`](tools/synthetic_traffic/src/synthetic_traffic/words.csv) into a random language other than English. It logs each request's status and stops after the last one. Every request is one OpenAI call, so keep the numbers small.
+`uv run synthetic-traffic` sends translation requests to the API's `POST /api/translate/` route, the same route the website's form uses. Each hour it sends a random number of requests (0 to 5 by default) at random moments within the hour, each translating a random word from [`words.csv`](tools/synthetic_traffic/src/synthetic_traffic/words.csv) into a random language other than English. It logs each request's status and stops after the last one, logging how many requests it sent and how many succeeded. Every request is one OpenAI call, so keep the numbers small.
 
 ```bash
 # 0-5 requests an hour for 4 hours, to the API on this machine
@@ -91,7 +91,19 @@ uv run synthetic-traffic
 uv run synthetic-traffic --base-url https://your-domain --hours 1 --min-requests-per-hour 2 --max-requests-per-hour 6
 ```
 
-The target defaults to `$SYNTHETIC_TRAFFIC_BASE_URL`, or `http://127.0.0.1:8000` when that isn't set. Keep the deployed domain out of the repo: pass it on the command line or set the variable in your shell. Run `uv run synthetic-traffic --help` for every option.
+The target defaults to `$SYNTHETIC_TRAFFIC_BASE_URL`, or `http://127.0.0.1:8000` when that isn't set. Keep the deployed domain out of the repo: pass it on the command line or set the variable in your shell. Add `--log-file` to also append the log to `synthetic_traffic.log` in the current directory, or `--log-file path/to/file.log` for another file. Run `uv run synthetic-traffic --help` for every option.
+
+To leave it running in the background and follow the log, run these from the repo root, one at a time:
+
+```bash
+# Exactly 3 requests in 1 hour against the deployed site, logged to synthetic_traffic.log
+nohup uv run synthetic-traffic --base-url https://your-domain --hours 1 --min-requests-per-hour 3 --max-requests-per-hour 3 --log-file > nohup.out 2>&1 &
+
+# -F (not -f) waits for the log file to appear, since the script takes a moment to start
+tail -F synthetic_traffic.log
+```
+
+The run stops by itself after its last request. Ctrl+C stops only `tail`. If the log never appears, `cat nohup.out` shows the error.
 
 ## Testing
 

@@ -12,6 +12,10 @@ wheels/
 # JavaScript dependencies
 node_modules/
 
+# Logs
+*.log
+nohup.out
+
 # Secrets
 .env
 private/
