@@ -16,7 +16,7 @@ from translate_grpc.settings import TRANSLATE_GRPC_SERVER_PORT
 HEALTH_CHECK_TIMEOUT_SECONDS = 3.0
 
 
-async def check_grpc_server_health(address: str) -> bool:
+async def is_grpc_server_healthy(address: str) -> bool:
     """Return whether the gRPC server at `address` reports SERVING for the whole server."""
     async with insecure_channel(address) as channel:
         try:
@@ -31,7 +31,7 @@ async def check_grpc_server_health(address: str) -> bool:
 
 def main() -> None:
     """Check the server on this machine's TRANSLATE_GRPC_SERVER_PORT and exit 0 if serving."""
-    is_serving = asyncio.run(check_grpc_server_health(f"localhost:{TRANSLATE_GRPC_SERVER_PORT}"))
+    is_serving = asyncio.run(is_grpc_server_healthy(f"localhost:{TRANSLATE_GRPC_SERVER_PORT}"))
     sys.exit(0 if is_serving else 1)
 
 

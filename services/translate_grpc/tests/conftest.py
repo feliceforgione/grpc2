@@ -16,7 +16,7 @@ os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
 
 @pytest.fixture
-def translate() -> Iterator[Mock]:
+def mock_chat_gpt_translator_translate() -> Iterator[Mock]:
     """Mock `ChatGptTranslator.translate` so the real translator is built but never calls OpenAI.
 
     autospec=True keeps the method signature, so each call receives the translator
