@@ -60,13 +60,15 @@ curl http://127.0.0.1:8000/health
 
 ### Running with Docker
 
-Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` and `utils` packages, and the libraries that service depends on. With your `.env` file in place, run from the project root:
+Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` and `utils` packages, and the libraries that service depends on. `compose.yaml` is also what Coolify deploys, so it doesn't publish any port; `compose.local.yaml` adds the port for running on your machine. With your `.env` file in place, run from the project root:
 
 ```bash
-docker compose up --build
+docker compose -f compose.yaml -f compose.local.yaml up --build
 ```
 
 The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network. Stop everything with `docker compose down`.
+
+On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA.
 
 ### Environment variables:
 

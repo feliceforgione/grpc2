@@ -1,0 +1,30 @@
+# Runs both services. Coolify deploys this file as one resource and pulls the
+# images that CI pushes to GHCR. To build and run them locally instead, see
+# compose.local.yaml.
+
+services:
+  web-api-server:
+    image: ghcr.io/feliceforgione/grpc2/web-api-server:latest
+    build:
+      context: .
+      dockerfile: services/web_api_server/Dockerfile
+    environment:
+      TRANSLATE_GRPC_SERVER_ADDRESS: translate-grpc:50051
+    # Only reachable through Coolify's proxy, which routes the domain to this port.
+    expose:
+      - "8000"
+    depends_on:
+      - translate-grpc
+    restart: unless-stopped
+
+  translate-grpc:
+    image: ghcr.io/feliceforgione/grpc2/translate-grpc:latest
+    build:
+      context: .
+      dockerfile: services/translate_grpc/Dockerfile
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY}
+    # Private: only the web API server reaches it, on the compose network.
+    expose:
+      - "50051"
+    restart: unless-stopped

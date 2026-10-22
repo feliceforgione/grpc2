@@ -1,0 +1,8 @@
+# Publishes the API on localhost for running the stack on your machine:
+#   docker compose -f compose.yaml -f compose.local.yaml up --build
+# Coolify only reads compose.yaml, so the port is never published on the server.
+
+services:
+  web-api-server:
+    ports:
+      - "127.0.0.1:8000:8000"
