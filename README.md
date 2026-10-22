@@ -6,6 +6,7 @@ A translation service split into microservices. The project is a [uv workspace](
 - **HTTP API** (`services/web_api_server/`): a FastAPI app that forwards requests to the gRPC server. It also serves the website (`web_api_server/website/`) at http://127.0.0.1:8000/.
 - **Shared gRPC code** (`packages/translate_proto/`): the Python code generated from `protos/translate_proto/translator.proto`, plus the error and language helpers both services use.
 - **Shared utilities** (`packages/utils/`): helpers used across the workspace, such as the `LanguageName` enum of supported languages.
+- **Synthetic traffic** (`tools/synthetic_traffic/`): a script you run from your own machine to send randomly timed translation requests to the API. It isn't deployed.
 
 ### Installation
 
@@ -78,6 +79,20 @@ On every push to `main`, once the tests, type check and lint pass, CI rebuilds t
 | `WEB_API_SERVER_HOST`           | `127.0.0.1`       | Host the API binds to      |
 | `WEB_API_SERVER_PORT`           | `8000`            | Port the API listens on    |
 
+### Synthetic traffic
+
+`uv run synthetic-traffic` sends translation requests to the API's `POST /api/translate/` route, the same route the website's form uses. Each hour it sends a random number of requests (0 to 5 by default) at random moments within the hour, each translating a random word from [`words.csv`](tools/synthetic_traffic/src/synthetic_traffic/words.csv) into a random language other than English. It logs each request's status and stops after the last one. Every request is one OpenAI call, so keep the numbers small.
+
+```bash
+# 0-5 requests an hour for 4 hours, to the API on this machine
+uv run synthetic-traffic
+
+# Against the deployed site, 2-6 requests an hour for 1 hour
+uv run synthetic-traffic --base-url https://your-domain --hours 1 --min-requests-per-hour 2 --max-requests-per-hour 6
+```
+
+The target defaults to `$SYNTHETIC_TRAFFIC_BASE_URL`, or `http://127.0.0.1:8000` when that isn't set. Keep the deployed domain out of the repo: pass it on the command line or set the variable in your shell. Run `uv run synthetic-traffic --help` for every option.
+
 ## Testing
 
 Each service and package keeps its tests in its own `tests/` folder:
@@ -87,6 +102,7 @@ Each service and package keeps its tests in its own `tests/` folder:
 | `services/web_api_server/tests/` | FastAPI routes, called in-process with FastAPI's `TestClient`   |
 | `services/translate_grpc/tests/` | The gRPC server, started in-process on a free port              |
 | `packages/translate_proto/tests/`| The shared language mappings                                    |
+| `tools/synthetic_traffic/tests/` | The synthetic traffic script's scheduling and requests          |
 
 By default the ChatGPT translator is replaced with a fake, so the tests run offline and need no API key:
 

@@ -1,0 +1,19 @@
+[project]
+name = "synthetic-traffic"
+version = "0.1.0"
+description = "Script that sends randomly timed translation requests to the web API server"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "utils",
+]
+
+[project.scripts]
+synthetic-traffic = "synthetic_traffic.traffic:main"
+
+[tool.uv.sources]
+utils = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
