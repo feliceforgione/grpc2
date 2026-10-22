@@ -8,6 +8,8 @@ import pytest
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
 
+from utils.network import LOOPBACK_IPV4
+
 # translate_grpc.translation reads OPENAI_API_KEY at import time. Load the real key
 # from .env first (for live tests), then fall back to a dummy so the offline tests
 # can import the server without one; they patch the translator out.
@@ -34,10 +36,10 @@ async def server_address() -> AsyncIterator[str]:
 
     grpc_server = grpc.aio.server()
     await add_services_to_server(grpc_server)
-    port = grpc_server.add_insecure_port("127.0.0.1:0")
+    port = grpc_server.add_insecure_port(f"{LOOPBACK_IPV4}:0")
     await grpc_server.start()
     try:
-        yield f"127.0.0.1:{port}"
+        yield f"{LOOPBACK_IPV4}:{port}"
     finally:
         await grpc_server.stop(None)
 
@@ -45,5 +47,5 @@ async def server_address() -> AsyncIterator[str]:
 @pytest.fixture
 async def channel(server_address: str) -> AsyncIterator[grpc.aio.Channel]:
     """Yield a client channel to the server from `server_address`."""
-    async with grpc.aio.insecure_channel(server_address) as ch:
-        yield ch
+    async with grpc.aio.insecure_channel(server_address) as channel:
+        yield channel

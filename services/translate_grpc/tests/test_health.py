@@ -9,6 +9,7 @@ from grpc_health.v1.health_pb2 import HealthCheckRequest, HealthCheckResponse
 from grpc_health.v1.health_pb2_grpc import HealthStub, add_HealthServicer_to_server
 
 from translate_grpc.healthcheck import is_grpc_server_healthy, main
+from utils.network import LOOPBACK_IPV4
 
 
 @pytest.fixture
@@ -18,10 +19,10 @@ async def unhealthy_grpc_server_address() -> AsyncIterator[str]:
     health_servicer = HealthServicer()
     await health_servicer.set("", HealthCheckResponse.NOT_SERVING)
     add_HealthServicer_to_server(health_servicer, grpc_server)
-    port = grpc_server.add_insecure_port("127.0.0.1:0")
+    port = grpc_server.add_insecure_port(f"{LOOPBACK_IPV4}:0")
     await grpc_server.start()
     try:
-        yield f"127.0.0.1:{port}"
+        yield f"{LOOPBACK_IPV4}:{port}"
     finally:
         await grpc_server.stop(None)
 
@@ -59,7 +60,7 @@ async def test_is_grpc_server_healthy_when_unreachable() -> None:
 
     Port 1 is reserved and has no listener, so the connection is refused.
     """
-    assert not await is_grpc_server_healthy("127.0.0.1:1")
+    assert not await is_grpc_server_healthy(f"{LOOPBACK_IPV4}:1")
 
 
 @pytest.mark.parametrize(
