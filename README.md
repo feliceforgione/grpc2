@@ -60,7 +60,7 @@ curl http://127.0.0.1:8000/health
 
 ### Running with Docker
 
-Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` and `utils` packages, and the libraries that service depends on. `compose.yaml` is also what Coolify deploys, so it doesn't publish any port; `compose.local.yaml` adds the port for running on your machine. With your `.env` file in place, run from the project root:
+Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` and `utils` packages, and the libraries that service depends on. `compose.yaml` is also what Coolify deploys, so it doesn't publish any port; Coolify pulls the images CI pushes to GHCR rather than building them, so `compose.yaml` has no `build:` keys either. `compose.local.yaml` adds those and the port for running on your machine. With your `.env` file in place, run from the project root:
 
 ```bash
 docker compose -f compose.yaml -f compose.local.yaml up --build

@@ -137,3 +137,17 @@ jobs:
             ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  # Tells Coolify to redeploy once the new images are on GHCR. Skipped when no
+  # image was published, because then there is nothing new to pull.
+  deploy:
+    name: Deploy to Coolify
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl --fail-with-body --silent --show-error \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK_URL"
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
