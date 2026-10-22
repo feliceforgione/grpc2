@@ -53,7 +53,7 @@ async def test_preserves_unicode_text(
     client: TranslationStub, mock_chat_gpt_translator_translate: Mock
 ) -> None:
     text = "¿Szép?👋"
-    mock_chat_gpt_translator_translate.side_effect = lambda _, text: text
+    mock_chat_gpt_translator_translate.return_value = text
 
     response = await client.Translate(TranslateRequest(text=text, language=LANGUAGE_HUNGARIAN))
 
