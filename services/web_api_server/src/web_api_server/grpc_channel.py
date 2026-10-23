@@ -14,10 +14,11 @@ RETRYABLE_STATUS_CODES = [StatusCode.UNAVAILABLE, StatusCode.RESOURCE_EXHAUSTED]
 # Counts the first attempt, so a call is retried at most MAX_ATTEMPTS - 1 times.
 MAX_ATTEMPTS = 3
 
-# The methods the retry policy applies to; any other method on the channel fails on its first
-# error. The service name must match the proto's package and service exactly, or the entry
-# silently matches nothing. An empty entry, [{}], would apply the policy to every method instead.
-METHOD_NAMES_TO_RETRY = [{"service": "translator.v1.Translation", "method": "Translate"}]
+# The methods the retry policy applies to. The empty entry, {}, matches every method on the
+# channel, so every call is retried. To retry only some methods, list them instead, e.g.
+# {"service": "translator.v1.Translation", "method": "Translate"}; the service name must match
+# the proto's package and service exactly, or the entry silently matches nothing.
+METHOD_NAMES_TO_RETRY: list[dict[str, str]] = [{}]
 
 GRPC_SERVICE_CONFIG = {
     "methodConfig": [
