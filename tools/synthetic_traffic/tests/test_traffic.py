@@ -19,6 +19,7 @@ from utils.language_name import LanguageName
 
 VALID_TEXT = "hello"
 VALID_LANGUAGE = LanguageName.ITALIAN
+VALID_BASE_URL = "http://127.0.0.1:8000"
 
 
 def test_target_languages_exclude_english() -> None:
@@ -104,14 +105,13 @@ def test_run_synthetic_traffic_waits_until_each_request_time() -> None:
         mock_http_client = mock_client.return_value.__enter__.return_value
         mock_http_client.post.return_value = Mock(is_success=True, status_code=200)
 
-        valid_base_url = "http://127.0.0.1:8000"
         successful_request_count = run_synthetic_traffic(
-            valid_base_url, [10.0, 30.0], [VALID_TEXT], Random(0)
+            VALID_BASE_URL, [10.0, 30.0], [VALID_TEXT], Random(0)
         )
 
     assert successful_request_count == 2
     mock_client.assert_called_once()
-    assert mock_client.call_args.kwargs["base_url"] == valid_base_url
+    assert mock_client.call_args.kwargs["base_url"] == VALID_BASE_URL
     assert mock_sleep.call_args_list == [call(10.0), call(30.0)]
     assert mock_http_client.post.call_count == 2
     sent_body = mock_http_client.post.call_args.kwargs["json"]
@@ -129,7 +129,7 @@ def test_run_synthetic_traffic_counts_only_successful_requests() -> None:
         mock_http_client.post.return_value = Mock(is_success=False, status_code=503)
 
         successful_request_count = run_synthetic_traffic(
-            "http://127.0.0.1:8000", [10.0, 30.0], [VALID_TEXT], Random(0)
+            VALID_BASE_URL, [10.0, 30.0], [VALID_TEXT], Random(0)
         )
 
     assert mock_http_client.post.call_count == 2
@@ -142,9 +142,11 @@ def test_configure_logging_appends_to_the_log_file(tmp_path: Path) -> None:
     logger = logging.getLogger()
     original_handlers = logger.handlers[:]
     logger.handlers.clear()
+
+    expected_log_line = "mock log line"
     try:
         configure_logging(log_file_path)
-        logging.getLogger("synthetic_traffic.traffic").info("mock log line")
+        logging.getLogger("synthetic_traffic.traffic").info(expected_log_line)
         for handler in logger.handlers:
             handler.flush()
     finally:
@@ -152,4 +154,4 @@ def test_configure_logging_appends_to_the_log_file(tmp_path: Path) -> None:
             handler.close()
         logger.handlers[:] = original_handlers
 
-    assert "mock log line" in log_file_path.read_text()
+    assert expected_log_line in log_file_path.read_text()
