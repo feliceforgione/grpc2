@@ -72,7 +72,7 @@ The API is published at http://127.0.0.1:8000/. The gRPC server is only reachabl
 
 | Variable                        | Default           | Description                |
 | ------------------------------- | ----------------- | -------------------------- |
-| `TRANSLATE_GRPC_SERVER_ADDRESS` | `localhost:50051` | Address of the gRPC server |
+| `TRANSLATE_GRPC_SERVER_ADDRESS` | `127.0.0.1:50051` | Address of the gRPC server |
 | `WEB_API_SERVER_HOST`           | `127.0.0.1`       | Host the API binds to      |
 | `WEB_API_SERVER_PORT`           | `8000`            | Port the API listens on    |
 

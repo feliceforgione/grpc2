@@ -11,7 +11,7 @@ from grpc.aio import AioRpcError, insecure_channel
 from grpc_health.v1.health_pb2 import HealthCheckRequest, HealthCheckResponse
 from grpc_health.v1.health_pb2_grpc import HealthStub
 
-from translate_grpc.settings import TRANSLATE_GRPC_SERVER_PORT
+from utils.constants import LOOPBACK_IPV4, TRANSLATE_GRPC_SERVER_PORT
 
 HEALTH_CHECK_TIMEOUT_SECONDS = 3.0
 
@@ -31,7 +31,8 @@ async def is_grpc_server_healthy(address: str) -> bool:
 
 def main() -> None:
     """Check the server on this machine's TRANSLATE_GRPC_SERVER_PORT and exit 0 if serving."""
-    is_serving = asyncio.run(is_grpc_server_healthy(f"localhost:{TRANSLATE_GRPC_SERVER_PORT}"))
+    server_address = f"{LOOPBACK_IPV4}:{TRANSLATE_GRPC_SERVER_PORT}"
+    is_serving = asyncio.run(is_grpc_server_healthy(server_address))
     sys.exit(0 if is_serving else 1)
 
 

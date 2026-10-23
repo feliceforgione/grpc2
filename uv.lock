@@ -1731,6 +1731,12 @@ wheels = [
 name = "utils"
 version = "0.1.0"
 source = { editable = "packages/utils" }
+dependencies = [
+    { name = "python-dotenv" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "python-dotenv", specifier = ">=1.1.0" }]
 
 [[package]]
 name = "uvicorn"

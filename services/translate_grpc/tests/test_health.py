@@ -9,7 +9,7 @@ from grpc_health.v1.health_pb2 import HealthCheckRequest, HealthCheckResponse
 from grpc_health.v1.health_pb2_grpc import HealthStub, add_HealthServicer_to_server
 
 from translate_grpc.healthcheck import is_grpc_server_healthy, main
-from utils.network import LOOPBACK_IPV4
+from utils.constants import LOOPBACK_IPV4
 
 
 @pytest.fixture

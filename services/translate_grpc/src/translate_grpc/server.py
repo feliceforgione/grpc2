@@ -6,8 +6,8 @@ import logging
 import grpc.aio
 
 from translate_grpc.health_servicer import add_health_service_to_server
-from translate_grpc.settings import TRANSLATE_GRPC_SERVER_PORT
 from translate_grpc.translator_servicer import add_translation_service_to_server
+from utils.constants import TRANSLATE_GRPC_SERVER_PORT
 
 
 async def add_services_to_server(server: grpc.aio.Server) -> None:

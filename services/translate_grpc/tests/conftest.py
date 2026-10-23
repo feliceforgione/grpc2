@@ -8,7 +8,7 @@ import pytest
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
 
-from utils.network import LOOPBACK_IPV4
+from utils.constants import LOOPBACK_IPV4
 
 # translate_grpc.translation reads OPENAI_API_KEY at import time. Load the real key
 # from .env first (for live tests), then fall back to a dummy so the offline tests
