@@ -18,6 +18,7 @@ COPY packages/translate_proto/pyproject.toml packages/translate_proto/
 COPY packages/utils/pyproject.toml packages/utils/
 COPY services/translate_grpc/pyproject.toml services/translate_grpc/
 COPY services/web_api_server/pyproject.toml services/web_api_server/
+COPY tools/synthetic_traffic/pyproject.toml tools/synthetic_traffic/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-install-workspace --package web-api-server
 
