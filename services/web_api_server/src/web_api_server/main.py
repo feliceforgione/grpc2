@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from grpc.aio import AioRpcError
 
 from translate_proto.translator_pb2_grpc import TranslationStub
+from utils.telemetry import setup_telemetry
 from web_api_server.grpc_channel import open_translate_grpc_channel
 from web_api_server.grpc_errors import handle_grpc_error_response
 from web_api_server.routers import (
@@ -49,6 +50,7 @@ app.mount("/static", StaticFiles(directory=WEBSITE_STATIC_DIR), name="static")
 def main() -> None:
     """Run the app with uvicorn on WEB_API_SERVER_HOST and WEB_API_SERVER_PORT."""
     logging.basicConfig(level=logging.INFO)
+    setup_telemetry("web-api-server")
     uvicorn.run(app, host=WEB_API_SERVER_HOST, port=WEB_API_SERVER_PORT)
 
 
