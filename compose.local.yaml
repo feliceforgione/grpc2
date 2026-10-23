@@ -16,3 +16,11 @@ services:
     build:
       context: .
       dockerfile: services/translate_grpc/Dockerfile
+
+  prometheus:
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    ports:
+      - "127.0.0.1:3300:3300"

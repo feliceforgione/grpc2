@@ -1,0 +1,11 @@
+# Prometheus scrapes each target's /metrics endpoint on this interval and keeps
+# the samples as time series for Grafana to query.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Prometheus's own metrics, so there is something to query before the
+  # services expose theirs. Add each service here once it serves /metrics.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
