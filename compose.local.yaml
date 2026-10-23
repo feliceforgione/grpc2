@@ -1,0 +1,18 @@
+# Builds the images from your checkout and publishes the API on localhost, for
+# running the stack on your machine:
+#   docker compose -f compose.yaml -f compose.local.yaml up --build
+# Coolify only reads compose.yaml, so it pulls the tested images from GHCR
+# instead of building, and the port is never published on the server.
+
+services:
+  web-api-server:
+    build:
+      context: .
+      dockerfile: services/web_api_server/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  translate-grpc:
+    build:
+      context: .
+      dockerfile: services/translate_grpc/Dockerfile
