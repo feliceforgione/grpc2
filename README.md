@@ -67,7 +67,7 @@ Each service has its own image, built from the Dockerfile in its folder, and `co
 docker compose -f compose.yaml -f compose.local.yaml up --build
 ```
 
-The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network. Stop everything with `docker compose down`.
+The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). Stop everything with `docker compose down`.
 
 On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA.
 
@@ -75,7 +75,7 @@ On every push to `main`, once the tests, type check and lint pass, CI rebuilds t
 
 | Variable                        | Default           | Description                |
 | ------------------------------- | ----------------- | -------------------------- |
-| `TRANSLATE_GRPC_SERVER_ADDRESS` | `localhost:50051` | Address of the gRPC server |
+| `TRANSLATE_GRPC_SERVER_ADDRESS` | `127.0.0.1:50051` | Address of the gRPC server |
 | `WEB_API_SERVER_HOST`           | `127.0.0.1`       | Host the API binds to      |
 | `WEB_API_SERVER_PORT`           | `8000`            | Port the API listens on    |
 
