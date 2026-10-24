@@ -11,6 +11,7 @@ from translate_proto.translator_pb2_grpc import (
     TranslationServicer,
     add_TranslationServicer_to_server,
 )
+from utils.telemetry import setup_telemetry
 
 
 class Translator(TranslationServicer):
@@ -50,6 +51,7 @@ async def serve() -> None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    setup_telemetry("translate-grpc")
     asyncio.run(serve())
 
 

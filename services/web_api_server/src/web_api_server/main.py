@@ -9,8 +9,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from grpc.aio import AioRpcError
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from translate_proto.translator_pb2_grpc import TranslationStub
+from utils.telemetry import setup_telemetry
 from web_api_server.grpc_channel import open_translate_grpc_channel
 from web_api_server.grpc_errors import handle_grpc_error_response
 from web_api_server.routers import (
@@ -44,11 +46,15 @@ app.include_router(languages_router)
 app.include_router(translate_router)
 app.include_router(website_router)
 app.mount("/static", StaticFiles(directory=WEBSITE_STATIC_DIR), name="static")
+# Record a span for each request. The spans go nowhere until main() calls setup_telemetry().
+# Skipping the ASGI receive/send spans leaves one span per request instead of three or more.
+FastAPIInstrumentor.instrument_app(app, exclude_spans=["receive", "send"])
 
 
 def main() -> None:
     """Run the app with uvicorn on WEB_API_SERVER_HOST and WEB_API_SERVER_PORT."""
     logging.basicConfig(level=logging.INFO)
+    setup_telemetry("web-api-server")
     uvicorn.run(app, host=WEB_API_SERVER_HOST, port=WEB_API_SERVER_PORT)
 
 
