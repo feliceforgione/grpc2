@@ -90,9 +90,9 @@ On every push to `main`, once the tests, type check and lint pass, CI rebuilds t
 
 ### Monitoring
 
-`compose.yaml` also runs Prometheus and Grafana, configured from the files in `monitoring/`. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Grafana starts with Prometheus already set up as its data source. Both keep their data in named volumes, so it survives restarts and redeploys.
+`compose.yaml` also runs Prometheus, Tempo and Grafana, configured from the files in `monitoring/`. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Grafana starts with Prometheus and Tempo already set up as its data sources. All three keep their data in named volumes, so it survives restarts and redeploys.
 
-Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`) and Prometheus is at http://127.0.0.1:9090/. On the server, Prometheus stays private and Coolify's proxy routes a domain to Grafana's port 3300.
+Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/ and Tempo's API is at http://127.0.0.1:3200/. On the server, Prometheus and Tempo stay private and Coolify's proxy routes a domain to Grafana's port 3300.
 
 ### Environment variables:
 

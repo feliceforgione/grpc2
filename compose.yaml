@@ -71,6 +71,20 @@ services:
       - "9090"
     restart: unless-stopped
 
+  tempo:
+    image: grafana/tempo:3.1.0
+    command: ["-target=all", "-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./monitoring/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    # Private: the services send spans to 4317 (OTLP gRPC) or 4318 (OTLP HTTP),
+    # and Grafana queries 3200, all on the compose network.
+    expose:
+      - "3200"
+      - "4317"
+      - "4318"
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:13.2.4
     environment:
@@ -85,9 +99,11 @@ services:
       - "3300"
     depends_on:
       - prometheus
+      - tempo
     restart: unless-stopped
 
-# Named volumes keep the metrics and Grafana's settings across redeploys.
+# Named volumes keep the metrics, traces and Grafana's settings across redeploys.
 volumes:
   prometheus-data:
+  tempo-data:
   grafana-data:
