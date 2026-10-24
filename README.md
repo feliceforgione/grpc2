@@ -86,7 +86,7 @@ Neither check sends a request to OpenAI. Docker runs them every 30s, and every 2
 docker compose ps
 ```
 
-On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA.
+On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA. It then tells Coolify to redeploy. A push that only changes `monitoring/` redeploys too, so the server picks up the new config files.
 
 ### Monitoring
 
