@@ -8,6 +8,7 @@ import grpc.aio
 from translate_grpc.health_servicer import add_health_service_to_server
 from translate_grpc.translator_servicer import add_translation_service_to_server
 from utils.constants import TRANSLATE_GRPC_SERVER_PORT
+from utils.telemetry import setup_telemetry
 
 
 async def add_services_to_server(server: grpc.aio.Server) -> None:
@@ -28,6 +29,7 @@ async def serve() -> None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    setup_telemetry("translate-grpc")
     asyncio.run(serve())
 
 
