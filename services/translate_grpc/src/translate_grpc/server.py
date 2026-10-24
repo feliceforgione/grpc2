@@ -1,48 +1,26 @@
+"""Entry point for the translate gRPC server: adds its services and serves them."""
+
 import asyncio
 import logging
 
-import grpc
 import grpc.aio
 
-from translate_grpc.translation import translate_text
-from translate_proto.languages import convert_language_name, is_supported_language
-from translate_proto.translator_pb2 import TranslateRequest, TranslateResponse
-from translate_proto.translator_pb2_grpc import (
-    TranslationServicer,
-    add_TranslationServicer_to_server,
-)
+from translate_grpc.health_servicer import add_health_service_to_server
+from translate_grpc.translator_servicer import add_translation_service_to_server
+from utils.constants import TRANSLATE_GRPC_SERVER_PORT
 from utils.telemetry import setup_telemetry
 
 
-class Translator(TranslationServicer):
-    async def Translate(
-        self,
-        request: TranslateRequest,
-        context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
-    ) -> TranslateResponse:
-        await self._validate_request_language(request.language, context)
-        language = convert_language_name(request.language)
-        translated_text = translate_text(request.text, language)
-        logging.info("%s translated to [%s] %s", request.text, language, translated_text)
-        return TranslateResponse(translated_text=translated_text)
-
-    async def _validate_request_language(
-        self,
-        language: int,
-        context: grpc.aio.ServicerContext[TranslateRequest, TranslateResponse],
-    ) -> None:
-        if not is_supported_language(language):
-            await context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT, "language must be set to a supported value"
-            )
+async def add_services_to_server(server: grpc.aio.Server) -> None:
+    """Add the Translation service and the standard gRPC health service to the server."""
+    add_translation_service_to_server(server)
+    await add_health_service_to_server(server)
 
 
 async def serve() -> None:
     server = grpc.aio.server()
-    add_TranslationServicer_to_server(  # type: ignore[no-untyped-call]
-        Translator(), server
-    )
-    listen_addr = "[::]:50051"
+    await add_services_to_server(server)
+    listen_addr = f"[::]:{TRANSLATE_GRPC_SERVER_PORT}"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     await server.start()

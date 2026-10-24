@@ -1,0 +1,14 @@
+# Grafana loads this on startup, so the Tempo data source exists without
+# setting it up in the UI. The fixed uid lets dashboards refer to it.
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: false
+    jsonData:
+      streamingEnabled:
+        search: true

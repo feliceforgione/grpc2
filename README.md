@@ -67,15 +67,41 @@ Each service has its own image, built from the Dockerfile in its folder, and `co
 docker compose -f compose.yaml -f compose.local.yaml up --build
 ```
 
-The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network. Stop everything with `docker compose down`.
+The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). Stop everything with `docker compose down`.
 
-On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA.
+#### Health checks
+
+Every container has a Docker health check, so Docker and Coolify can tell a hung or crashed server from a healthy one. Coolify combines them into the app's status. Each runs a command inside its container:
+
+| Service          | Command                                        | What it checks                                              |
+| ---------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| `translate-grpc` | `translate-grpc-healthcheck`                   | The standard gRPC health service reports `SERVING`          |
+| `web-api-server` | `curl --fail http://127.0.0.1:8000/health`     | `GET /health` answers 200 (it doesn't call the gRPC server) |
+| `prometheus`     | `wget http://127.0.0.1:9090/-/ready`           | Prometheus is ready to serve queries                        |
+| `tempo`          | `/tempo -health`                               | Tempo's `/ready` endpoint answers 200                       |
+| `grafana`        | `curl --fail http://127.0.0.1:3300/api/health` | Grafana and its database are up                             |
+
+curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too. Tempo's image has no shell or curl, so it uses Tempo's built-in check.
+
+No check sends a request to OpenAI. Docker runs them every 30s, and every 2s during the first 15s after a container starts. A container turns `unhealthy` after 3 failures in a row, and a check that takes longer than 5s counts as a failure. `web-api-server` only starts once `translate-grpc` is healthy. Check the status with:
+
+```bash
+docker compose ps
+```
+
+On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA. The same goes for the Prometheus, Tempo and Grafana images, which CI rebuilds when their folder in `monitoring/` changes. It then tells Coolify to redeploy.
+
+### Monitoring
+
+`compose.yaml` also runs Prometheus, Tempo and Grafana, configured from the files in `monitoring/`. Each one's config is built into its image by the Dockerfile in its folder, because Coolify doesn't copy the repo's files onto the server, so a config change reaches the server through a new image. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Grafana starts with Prometheus and Tempo already set up as its data sources. All three keep their data in named volumes, so it survives restarts and redeploys.
+
+Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/ and Tempo's API is at http://127.0.0.1:3200/. On the server, Prometheus and Tempo stay private and Coolify's proxy routes a domain to Grafana's port 3300.
 
 ### Environment variables:
 
 | Variable                        | Default           | Description                |
 | ------------------------------- | ----------------- | -------------------------- |
-| `TRANSLATE_GRPC_SERVER_ADDRESS` | `localhost:50051` | Address of the gRPC server |
+| `TRANSLATE_GRPC_SERVER_ADDRESS` | `127.0.0.1:50051` | Address of the gRPC server |
 | `WEB_API_SERVER_HOST`           | `127.0.0.1`       | Host the API binds to      |
 | `WEB_API_SERVER_PORT`           | `8000`            | Port the API listens on    |
 

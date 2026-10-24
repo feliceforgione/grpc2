@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Helpers shared across the workspace packages and services"
 requires-python = ">=3.13"
 dependencies = [
+    "python-dotenv>=1.1.0",
     "opentelemetry-api>=1.45.1",
     "opentelemetry-sdk>=1.45.1",
 ]

@@ -72,8 +72,9 @@ jobs:
 
       - run: npm test
 
-  # Lists the services whose image contents changed in this push: the service's
-  # own folder, the shared packages, or the workspace's dependencies.
+  # Lists the images whose contents changed in this push. For a service: its own
+  # folder, the shared packages, or the workspace's dependencies. For a
+  # monitoring tool: its folder in monitoring/, which holds its config.
   changes:
     name: Find changed services
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -99,6 +100,12 @@ jobs:
               - pyproject.toml
               - uv.lock
               - .dockerignore
+            prometheus:
+              - monitoring/prometheus/**
+            tempo:
+              - monitoring/tempo/**
+            grafana:
+              - monitoring/grafana/**
 
   # Builds the changed services' images and pushes them to GHCR, only after
   # every other job passes, so only tested code is published.
@@ -113,6 +120,18 @@ jobs:
     strategy:
       matrix:
         service: ${{ fromJSON(needs.changes.outputs.services) }}
+    # Where each image is built from. The services build from the repo root, so
+    # they can copy the shared packages; service folders use underscores where
+    # the image names use hyphens. A monitoring image only needs its own folder.
+    env:
+      BUILDS: >-
+        {
+          "translate-grpc": {"context": ".", "file": "services/translate_grpc/Dockerfile"},
+          "web-api-server": {"context": ".", "file": "services/web_api_server/Dockerfile"},
+          "prometheus": {"context": "monitoring/prometheus", "file": "monitoring/prometheus/Dockerfile"},
+          "tempo": {"context": "monitoring/tempo", "file": "monitoring/tempo/Dockerfile"},
+          "grafana": {"context": "monitoring/grafana", "file": "monitoring/grafana/Dockerfile"}
+        }
     steps:
       - uses: actions/checkout@v4
 
@@ -128,9 +147,8 @@ jobs:
       # build so a deploy can be rolled back to it.
       - uses: docker/build-push-action@v6
         with:
-          context: .
-          # Service folders use underscores where the image names use hyphens.
-          file: ${{ fromJSON('{"translate-grpc":"services/translate_grpc/Dockerfile","web-api-server":"services/web_api_server/Dockerfile"}')[matrix.service] }}
+          context: ${{ fromJSON(env.BUILDS)[matrix.service].context }}
+          file: ${{ fromJSON(env.BUILDS)[matrix.service].file }}
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
