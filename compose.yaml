@@ -70,6 +70,10 @@ services:
     # Private: only Grafana queries it, on the compose network.
     expose:
       - "9090"
+    # The image has busybox wget, which exits non-zero on an error status.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9090/-/ready"]
+      <<: *healthcheck-timings
     restart: unless-stopped
 
   tempo:
@@ -83,6 +87,10 @@ services:
       - "3200"
       - "4317"
       - "4318"
+    # The image has no shell or curl, so it uses Tempo's own check of /ready.
+    healthcheck:
+      test: ["CMD", "/tempo", "-health"]
+      <<: *healthcheck-timings
     restart: unless-stopped
 
   grafana:
@@ -96,6 +104,20 @@ services:
     # Only reachable through Coolify's proxy, which routes a domain to this port.
     expose:
       - "3300"
+    # The port must match GF_SERVER_HTTP_PORT above, like `expose`.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "--show-error",
+          "--max-time",
+          "3",
+          "http://127.0.0.1:3300/api/health",
+        ]
+      <<: *healthcheck-timings
     depends_on:
       - prometheus
       - tempo
