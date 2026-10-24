@@ -73,13 +73,15 @@ jobs:
       - run: npm test
 
   # Lists the services whose image contents changed in this push: the service's
-  # own folder, the shared packages, or the workspace's dependencies.
+  # own folder, the shared packages, or the workspace's dependencies. Also says
+  # whether the monitoring config changed, which needs a redeploy but no image.
   changes:
     name: Find changed services
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.filter.outputs.changes }}
+      monitoring: ${{ steps.monitoring.outputs.monitoring }}
     steps:
       - uses: actions/checkout@v4
 
@@ -99,6 +101,15 @@ jobs:
               - pyproject.toml
               - uv.lock
               - .dockerignore
+
+      # A separate step, so `monitoring` isn't added to the services above and
+      # the publish job never tries to build an image for it.
+      - id: monitoring
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            monitoring:
+              - monitoring/**
 
   # Builds the changed services' images and pushes them to GHCR, only after
   # every other job passes, so only tested code is published.
@@ -138,11 +149,17 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-  # Tells Coolify to redeploy once the new images are on GHCR. Skipped when no
-  # image was published, because then there is nothing new to pull.
+  # Tells Coolify to redeploy once the new images are on GHCR, or when only the
+  # monitoring config changed, so Coolify pulls the new files from the repo.
+  # Skipped when nothing new needs deploying, or when any job before it failed.
+  # !cancelled() lets it run when publish was skipped because no image changed.
   deploy:
     name: Deploy to Coolify
-    needs: publish
+    needs: [changes, test, typecheck, lint, website, publish]
+    if: >-
+      !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && (needs.publish.result == 'success' || needs.changes.outputs.monitoring == 'true')
     runs-on: ubuntu-latest
     steps:
       - run: |
