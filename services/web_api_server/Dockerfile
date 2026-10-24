@@ -30,6 +30,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.13-slim-trixie
 
+# curl is only for the health check in compose.yaml; the slim image has none.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --system --no-create-home app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
