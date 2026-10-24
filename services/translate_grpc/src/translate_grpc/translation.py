@@ -9,6 +9,9 @@ from utils.language_name import LanguageName
 load_dotenv()
 apikey = os.environ["OPENAI_API_KEY"]
 
+# deep_translator defaults to gpt-3.5-turbo, which OpenAI has shut down.
+OPENAI_MODEL = "gpt-6-luna"
+
 
 def strip_added_quotes(text: str, translated: str) -> str:
     """Trim whitespace and drop quotes ChatGPT wrapped around its answer.
@@ -38,4 +41,6 @@ def translate_text(text: str, target_language: LanguageName = LanguageName.ENGLI
 @cache
 def _get_translator(target_language: str) -> ChatGptTranslator:
     """Build the translator for a target language once and reuse it on later calls."""
-    return ChatGptTranslator(api_key=apikey, source=LanguageName.ENGLISH, target=target_language)
+    return ChatGptTranslator(
+        api_key=apikey, source=LanguageName.ENGLISH, target=target_language, model=OPENAI_MODEL
+    )
