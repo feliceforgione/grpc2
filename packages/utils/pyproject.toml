@@ -3,7 +3,9 @@ name = "utils"
 version = "0.1.0"
 description = "Helpers shared across the workspace packages and services"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "python-dotenv>=1.1.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]

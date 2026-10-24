@@ -2,25 +2,59 @@
 # images that CI pushes to GHCR. There are no `build:` keys here, so Coolify
 # never builds on the server; compose.local.yaml adds them for running locally.
 
+# Shared by health checks. timeout stays above the checks' own 3s request
+# timeout, so a slow answer counts as unhealthy rather than being cut off by
+# Docker. While the container starts, Docker checks every start_interval, so
+# web-api-server isn't held up waiting a full interval for translate-grpc.
+x-healthcheck-timings: &healthcheck-timings
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 15s
+  start_interval: 2s
+
 services:
   web-api-server:
     image: ghcr.io/feliceforgione/grpc2/web-api-server:latest
     environment:
-      TRANSLATE_GRPC_SERVER_ADDRESS: translate-grpc:50051
+      TRANSLATE_GRPC_SERVER_ADDRESS: translate-grpc:${TRANSLATE_GRPC_SERVER_PORT:-50051}
     # Only reachable through Coolify's proxy, which routes the domain to this port.
     expose:
       - "8000"
+    # Wait until the gRPC server answers its health check
     depends_on:
-      - translate-grpc
+      translate-grpc:
+        condition: service_healthy
+    # Calls GET /health; --fail exits non-zero on an error status. The port must
+    # match WEB_API_SERVER_PORT in services/web_api_server/Dockerfile, like
+    # `expose` above.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "--show-error",
+          "--max-time",
+          "3",
+          "http://127.0.0.1:8000/health",
+        ]
+      <<: *healthcheck-timings
     restart: unless-stopped
 
   translate-grpc:
     image: ghcr.io/feliceforgione/grpc2/translate-grpc:latest
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY}
+      TRANSLATE_GRPC_SERVER_PORT: ${TRANSLATE_GRPC_SERVER_PORT:-50051}
     # Private: only the web API server reaches it, on the compose network.
     expose:
-      - "50051"
+      - "${TRANSLATE_GRPC_SERVER_PORT:-50051}"
+    # Calls the standard gRPC health service, which never reaches OpenAI.
+    healthcheck:
+      test: ["CMD", "translate-grpc-healthcheck"]
+      <<: *healthcheck-timings
     restart: unless-stopped
 
   prometheus:

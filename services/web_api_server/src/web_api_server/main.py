@@ -8,9 +8,11 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from grpc.aio import AioRpcError, insecure_channel
+from grpc.aio import AioRpcError
 
 from translate_proto.translator_pb2_grpc import TranslationStub
+from utils.constants import LOOPBACK_IPV4, TRANSLATE_GRPC_SERVER_PORT
+from web_api_server.grpc_channel import open_translate_grpc_channel
 from web_api_server.grpc_errors import handle_grpc_error_response
 from web_api_server.routers import (
     WEBSITE_STATIC_DIR,
@@ -20,15 +22,17 @@ from web_api_server.routers import (
     website_router,
 )
 
-TRANSLATE_GRPC_SERVER_ADDRESS = os.environ.get("TRANSLATE_GRPC_SERVER_ADDRESS", "localhost:50051")
-WEB_API_SERVER_HOST = os.environ.get("WEB_API_SERVER_HOST", "127.0.0.1")
+TRANSLATE_GRPC_SERVER_ADDRESS = os.environ.get(
+    "TRANSLATE_GRPC_SERVER_ADDRESS", f"{LOOPBACK_IPV4}:{TRANSLATE_GRPC_SERVER_PORT}"
+)
+WEB_API_SERVER_HOST = os.environ.get("WEB_API_SERVER_HOST", LOOPBACK_IPV4)
 WEB_API_SERVER_PORT = int(os.environ.get("WEB_API_SERVER_PORT", "8000"))
 
 
 @asynccontextmanager
 async def app_lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None]:
     """Open one gRPC channel for the app's lifetime and share it across requests."""
-    async with insecure_channel(TRANSLATE_GRPC_SERVER_ADDRESS) as grpc_channel:
+    async with open_translate_grpc_channel(TRANSLATE_GRPC_SERVER_ADDRESS) as grpc_channel:
         fastapi_app.state.translate_grpc_client = TranslationStub(grpc_channel)  # type: ignore[no-untyped-call]
         yield
 
