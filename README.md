@@ -86,11 +86,11 @@ Neither check sends a request to OpenAI. Docker runs them every 30s, and every 2
 docker compose ps
 ```
 
-On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA. It then tells Coolify to redeploy. A push that only changes `monitoring/` redeploys too, so the server picks up the new config files.
+On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA. The same goes for the Prometheus, Tempo and Grafana images, which CI rebuilds when their folder in `monitoring/` changes. It then tells Coolify to redeploy.
 
 ### Monitoring
 
-`compose.yaml` also runs Prometheus, Tempo and Grafana, configured from the files in `monitoring/`. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Grafana starts with Prometheus and Tempo already set up as its data sources. All three keep their data in named volumes, so it survives restarts and redeploys.
+`compose.yaml` also runs Prometheus, Tempo and Grafana, configured from the files in `monitoring/`. Each one's config is built into its image by the Dockerfile in its folder, because Coolify doesn't copy the repo's files onto the server, so a config change reaches the server through a new image. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Grafana starts with Prometheus and Tempo already set up as its data sources. All three keep their data in named volumes, so it survives restarts and redeploys.
 
 Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/ and Tempo's API is at http://127.0.0.1:3200/. On the server, Prometheus and Tempo stay private and Coolify's proxy routes a domain to Grafana's port 3300.
 
