@@ -69,6 +69,23 @@ docker compose -f compose.yaml -f compose.local.yaml up --build
 
 The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). Stop everything with `docker compose down`.
 
+#### Health checks
+
+Both services have a Docker health check, so Docker and Coolify can tell a hung or crashed server from a healthy one. Each runs a command inside its container:
+
+| Service          | Command                                    | What it checks                                              |
+| ---------------- | ------------------------------------------ | ----------------------------------------------------------- |
+| `translate-grpc` | `translate-grpc-healthcheck`               | The standard gRPC health service reports `SERVING`          |
+| `web-api-server` | `curl --fail http://127.0.0.1:8000/health` | `GET /health` answers 200 (it doesn't call the gRPC server) |
+
+curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too.
+
+Neither check sends a request to OpenAI. Docker runs them every 30s, and every 2s during the first 15s after a container starts. A container turns `unhealthy` after 3 failures in a row, and a check that takes longer than 5s counts as a failure. `web-api-server` only starts once `translate-grpc` is healthy. Check the status with:
+
+```bash
+docker compose ps
+```
+
 On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA.
 
 ### Environment variables:
