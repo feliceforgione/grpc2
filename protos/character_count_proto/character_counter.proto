@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package character_count.v1;
+
+message CountCharactersRequest {
+    string text_to_count = 1;
+}
+
+message CountCharactersResponse {
+    int32 character_count = 1;
+}
+
+service CharacterCounter {
+  rpc CountCharacters (CountCharactersRequest) returns (CountCharactersResponse) {}
+}
