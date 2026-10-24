@@ -11,14 +11,16 @@ requires-python = ">=3.13"
 dependencies = [
     "translate-grpc",
     "translate-proto",
+    "synthetic-traffic",
     "utils",
     "web-api-server",
 ]
 
 [tool.uv.workspace]
-members = ["packages/*", "services/*"]
+members = ["packages/*", "services/*", "tools/*"]
 
 [tool.uv.sources]
+synthetic-traffic = { workspace = true }
 translate-grpc = { workspace = true }
 translate-proto = { workspace = true }
 utils = { workspace = true }
@@ -49,7 +51,7 @@ python -m grpc_tools.protoc -I protos
 """
 
 [tool.pytest.ini_options]
-testpaths = ["services", "packages"]
+testpaths = ["services", "packages", "tools"]
 addopts = "-m 'not live' --import-mode=importlib"
 markers = ["live: calls the real OpenAI API (run with: pytest -m live)"]
 asyncio_mode = "auto"
@@ -62,12 +64,13 @@ cmd = "mypy"
 [tool.mypy]
 python_version = "3.13"
 strict = true
-files = ["packages", "services"]
+files = ["packages", "services", "tools"]
 mypy_path = [
     "packages/translate_proto/src",
     "packages/utils/src",
     "services/translate_grpc/src",
     "services/web_api_server/src",
+    "tools/synthetic_traffic/src",
 ]
 explicit_package_bases = true
 
@@ -96,4 +99,4 @@ extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py", "*.md"]
 select = ["E", "F", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["translate_grpc", "translate_proto", "utils", "web_api_server"]
+known-first-party = ["synthetic_traffic", "translate_grpc", "translate_proto", "utils", "web_api_server"]
