@@ -71,16 +71,19 @@ The API is published at http://127.0.0.1:8000/. The gRPC server is only reachabl
 
 #### Health checks
 
-Both services have a Docker health check, so Docker and Coolify can tell a hung or crashed server from a healthy one. Each runs a command inside its container:
+Every container has a Docker health check, so Docker and Coolify can tell a hung or crashed server from a healthy one. Coolify combines them into the app's status. Each runs a command inside its container:
 
-| Service          | Command                                    | What it checks                                              |
-| ---------------- | ------------------------------------------ | ----------------------------------------------------------- |
-| `translate-grpc` | `translate-grpc-healthcheck`               | The standard gRPC health service reports `SERVING`          |
-| `web-api-server` | `curl --fail http://127.0.0.1:8000/health` | `GET /health` answers 200 (it doesn't call the gRPC server) |
+| Service          | Command                                        | What it checks                                              |
+| ---------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| `translate-grpc` | `translate-grpc-healthcheck`                   | The standard gRPC health service reports `SERVING`          |
+| `web-api-server` | `curl --fail http://127.0.0.1:8000/health`     | `GET /health` answers 200 (it doesn't call the gRPC server) |
+| `prometheus`     | `wget http://127.0.0.1:9090/-/ready`           | Prometheus is ready to serve queries                        |
+| `tempo`          | `/tempo -health`                               | Tempo's `/ready` endpoint answers 200                       |
+| `grafana`        | `curl --fail http://127.0.0.1:3300/api/health` | Grafana and its database are up                             |
 
-curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too.
+curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too. Tempo's image has no shell or curl, so it uses Tempo's built-in check.
 
-Neither check sends a request to OpenAI. Docker runs them every 30s, and every 2s during the first 15s after a container starts. A container turns `unhealthy` after 3 failures in a row, and a check that takes longer than 5s counts as a failure. `web-api-server` only starts once `translate-grpc` is healthy. Check the status with:
+No check sends a request to OpenAI. Docker runs them every 30s, and every 2s during the first 15s after a container starts. A container turns `unhealthy` after 3 failures in a row, and a check that takes longer than 5s counts as a failure. `web-api-server` only starts once `translate-grpc` is healthy. Check the status with:
 
 ```bash
 docker compose ps
