@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # Build from the repo root, because the service needs the workspace's uv.lock
 # and shared packages:
 #   docker build -f services/web_api_server/Dockerfile .
@@ -12,13 +14,9 @@ WORKDIR /app
 
 # Install the third-party dependencies first, so this layer is reused until
 # uv.lock or a pyproject.toml changes. uv needs every workspace member's
-# pyproject.toml to check the lock file.
+# pyproject.toml to check the lock file, so copy them all, keeping their folders.
 COPY pyproject.toml uv.lock ./
-COPY packages/translate_proto/pyproject.toml packages/translate_proto/
-COPY packages/utils/pyproject.toml packages/utils/
-COPY services/translate_grpc/pyproject.toml services/translate_grpc/
-COPY services/web_api_server/pyproject.toml services/web_api_server/
-COPY tools/synthetic_traffic/pyproject.toml tools/synthetic_traffic/
+COPY --parents packages/*/pyproject.toml services/*/pyproject.toml tools/*/pyproject.toml ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-install-workspace --package web-api-server
 
