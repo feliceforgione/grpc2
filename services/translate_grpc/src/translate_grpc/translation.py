@@ -57,10 +57,11 @@ def translate_text(text: str, target_language: LanguageName = LanguageName.ENGLI
             "translation.text_length": len(text),
         },
     ) as span:
-        translated = _get_translator(target_language).translate(text=text)
-        translated = strip_added_quotes(text, translated)
-        span.set_attribute("translation.translated_text_length", len(translated))
-    return translated
+        # deep_translator has no type hints, so its result is annotated here.
+        chat_gpt_answer: str = _get_translator(target_language).translate(text=text)
+        translated_text = strip_added_quotes(text, chat_gpt_answer)
+        span.set_attribute("translation.translated_text_length", len(translated_text))
+    return translated_text
 
 
 @cache
