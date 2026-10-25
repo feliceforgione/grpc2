@@ -9,13 +9,16 @@ from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.trace import SpanKind, StatusCode
 
 from translate_grpc.translation import OPENAI_MODEL, translate_text
-from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
+from translate_proto.languages import convert_to_proto_language
+from translate_proto.translator_pb2 import TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.language_name import LanguageName
 
 VALID_TEXT = "hello"
 VALID_LANGUAGE = LanguageName.ITALIAN
-VALID_TRANSLATE_REQUEST = TranslateRequest(text=VALID_TEXT, language=LANGUAGE_ITALIAN)
+VALID_TRANSLATE_REQUEST = TranslateRequest(
+    text=VALID_TEXT, language=convert_to_proto_language(VALID_LANGUAGE)
+)
 
 
 async def test_translate_records_a_server_span(
