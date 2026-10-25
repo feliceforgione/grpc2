@@ -80,7 +80,7 @@ async def mock_translation_servicer_behind_app(
 
 async def test_grpc_call_records_client_span_in_the_request_trace(
     mock_translation_servicer_behind_app: Mock,
-    get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
+    get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     """The call to the translate service records a CLIENT span under the request's SERVER span.
 
@@ -91,7 +91,7 @@ async def test_grpc_call_records_client_span_in_the_request_trace(
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://mock") as client:
         await client.post(TRANSLATE_URL, json=VALID_JSON_BODY)
 
-    spans_by_kind = {span.kind: span for span in get_finished_spans()}
+    spans_by_kind = get_finished_spans_by_kind()
     server_span = spans_by_kind[SpanKind.SERVER]
     client_span = spans_by_kind[SpanKind.CLIENT]
     assert client_span.name == "/translator.v1.Translation/Translate"

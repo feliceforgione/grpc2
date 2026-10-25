@@ -24,20 +24,20 @@ VALID_TRANSLATE_REQUEST = TranslateRequest(
 async def test_translate_records_a_server_span(
     mock_chat_gpt_translator_translate: Mock,
     translate_grpc_channel: grpc.aio.Channel,
-    get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
+    get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     mock_chat_gpt_translator_translate.return_value = "ciao"
 
     await TranslationStub(translate_grpc_channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
 
-    spans_by_kind = {span.kind: span for span in get_finished_spans()}
-    assert spans_by_kind[SpanKind.SERVER].name == "/translator.v1.Translation/Translate"
+    server_span = get_finished_spans_by_kind()[SpanKind.SERVER]
+    assert server_span.name == "/translator.v1.Translation/Translate"
 
 
 async def test_translate_span_joins_the_callers_trace(
     mock_chat_gpt_translator_translate: Mock,
     translate_grpc_channel: grpc.aio.Channel,
-    get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
+    get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     """The server continues the trace named in the call's `traceparent` metadata.
 
@@ -52,8 +52,7 @@ async def test_translate_span_joins_the_callers_trace(
         VALID_TRANSLATE_REQUEST, metadata=[("traceparent", traceparent)]
     )
 
-    spans_by_kind = {span.kind: span for span in get_finished_spans()}
-    span = spans_by_kind[SpanKind.SERVER]
+    span = get_finished_spans_by_kind()[SpanKind.SERVER]
     assert span.context is not None
     assert span.context.trace_id == trace_id
     assert span.parent is not None
@@ -73,14 +72,14 @@ async def test_health_check_records_no_span(
 async def test_openai_call_records_client_span_under_the_server_span(
     mock_chat_gpt_translator_translate: Mock,
     translate_grpc_channel: grpc.aio.Channel,
-    get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
+    get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     """The call to OpenAI joins the RPC's trace, so it shows how much of the RPC it took."""
     mock_chat_gpt_translator_translate.return_value = "ciao"
 
     await TranslationStub(translate_grpc_channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
 
-    spans_by_kind = {span.kind: span for span in get_finished_spans()}
+    spans_by_kind = get_finished_spans_by_kind()
     server_span = spans_by_kind[SpanKind.SERVER]
     client_span = spans_by_kind[SpanKind.CLIENT]
     assert client_span.parent is not None
