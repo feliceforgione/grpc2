@@ -32,9 +32,9 @@ def mock_chat_gpt_translator_translate() -> Iterator[Mock]:
 async def server_address() -> AsyncIterator[str]:
     """Run the real server's services on an ephemeral port and yield its address."""
     # Imported here because translate_grpc.translation needs OPENAI_API_KEY set above.
-    from translate_grpc.server import add_services_to_server
+    from translate_grpc.server import add_services_to_server, create_grpc_server
 
-    grpc_server = grpc.aio.server()
+    grpc_server = create_grpc_server()
     await add_services_to_server(grpc_server)
     port = grpc_server.add_insecure_port(f"{LOOPBACK_IPV4}:0")
     await grpc_server.start()

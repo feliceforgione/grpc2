@@ -4,11 +4,21 @@ import asyncio
 import logging
 
 import grpc.aio
+from opentelemetry.instrumentation.grpc import aio_server_interceptor
+from opentelemetry.instrumentation.grpc.filters import health_check, negate
 
 from translate_grpc.health_servicer import add_health_service_to_server
 from translate_grpc.translator_servicer import add_translation_service_to_server
 from utils.constants import TRANSLATE_GRPC_SERVER_PORT
 from utils.telemetry import setup_telemetry
+
+
+def create_grpc_server() -> grpc.aio.Server:
+    """Create a server that records a span for each RPC, except the health checks."""
+    tracing_interceptor = aio_server_interceptor(  # type: ignore[no-untyped-call]
+        filter_=negate(health_check())
+    )
+    return grpc.aio.server(interceptors=[tracing_interceptor])
 
 
 async def add_services_to_server(server: grpc.aio.Server) -> None:
@@ -18,7 +28,7 @@ async def add_services_to_server(server: grpc.aio.Server) -> None:
 
 
 async def serve() -> None:
-    server = grpc.aio.server()
+    server = create_grpc_server()
     await add_services_to_server(server)
     listen_addr = f"[::]:{TRANSLATE_GRPC_SERVER_PORT}"
     server.add_insecure_port(listen_addr)
