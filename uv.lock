@@ -1196,6 +1196,21 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-instrumentation-grpc"
+version = "0.66b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d7/64/745e28d64fa07d3416fee6b31c2bffbb0e6a506f1d91886793310538306c/opentelemetry_instrumentation_grpc-0.66b1.tar.gz", hash = "sha256:2055c8584ea67cebe9e39a13dca000cbba17c52366aa2aa7c6655fe454ec13b4", size = 31922, upload-time = "2026-10-06T17:36:26.62Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/be/68be2da884ec05e42a0efefdfef373a7cfee55a58fb4fe3cae455d0fb61a/opentelemetry_instrumentation_grpc-0.66b1-py3-none-any.whl", hash = "sha256:8d0b0594bf86ece324367b4614c14c9a1893d65f0c7f2366a8131b45fc9ad474", size = 24261, upload-time = "2026-10-06T17:35:35.19Z" },
+]
+
+[[package]]
 name = "opentelemetry-sdk"
 version = "1.45.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1765,6 +1780,7 @@ dependencies = [
     { name = "googletrans" },
     { name = "grpcio" },
     { name = "grpcio-health-checking" },
+    { name = "opentelemetry-instrumentation-grpc" },
     { name = "python-dotenv" },
     { name = "translate-proto" },
     { name = "utils" },
@@ -1776,6 +1792,7 @@ requires-dist = [
     { name = "googletrans", specifier = ">=4.0.2" },
     { name = "grpcio", specifier = ">=1.84.0" },
     { name = "grpcio-health-checking", specifier = ">=1.84.0" },
+    { name = "opentelemetry-instrumentation-grpc", specifier = ">=0.66b1" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "translate-proto", editable = "packages/translate_proto" },
     { name = "utils", editable = "packages/utils" },
@@ -1978,6 +1995,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "grpcio" },
     { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-grpc" },
     { name = "pydantic" },
     { name = "starlette" },
     { name = "translate-proto" },
@@ -1990,6 +2008,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.143.0" },
     { name = "grpcio", specifier = ">=1.84.0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.66b1" },
+    { name = "opentelemetry-instrumentation-grpc", specifier = ">=0.66b1" },
     { name = "pydantic", specifier = ">=2.14.0" },
     { name = "starlette", specifier = ">=1.7.0" },
     { name = "translate-proto", editable = "packages/translate_proto" },

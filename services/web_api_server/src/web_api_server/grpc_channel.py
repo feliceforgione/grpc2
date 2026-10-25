@@ -4,6 +4,7 @@ import json
 
 from grpc import StatusCode
 from grpc.aio import Channel, insecure_channel
+from opentelemetry.instrumentation.grpc import aio_client_interceptors
 
 # Status codes the channel retries by itself before the call fails:
 # - UNAVAILABLE: the server was down or the connection dropped before it answered.
@@ -39,7 +40,13 @@ GRPC_SERVICE_CONFIG = {
 
 
 def open_translate_grpc_channel(server_address: str) -> Channel:
-    """Open a translate gRPC channel that retries METHOD_NAMES_TO_RETRY on RETRYABLE_STATUS_CODES"""
+    """Open a translate gRPC channel that retries METHOD_NAMES_TO_RETRY on RETRYABLE_STATUS_CODES
+
+    The interceptors record a span for each call and send its trace context in the call's
+    metadata, so the translate server's span joins the same trace. A retried call is one span.
+    """
     return insecure_channel(
-        server_address, options=[("grpc.service_config", json.dumps(GRPC_SERVICE_CONFIG))]
+        server_address,
+        options=[("grpc.service_config", json.dumps(GRPC_SERVICE_CONFIG))],
+        interceptors=aio_client_interceptors(),  # type: ignore[no-untyped-call]
     )

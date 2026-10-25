@@ -1,5 +1,4 @@
-from collections.abc import Iterator
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from fastapi import Request
@@ -17,15 +16,6 @@ TRANSLATE_URL = "/api/translate/"
 VALID_TEXT_TO_TRANSLATE = "hello"
 VALID_LANGUAGE = LanguageName.ITALIAN
 VALID_JSON_BODY = {"text": VALID_TEXT_TO_TRANSLATE, "language": VALID_LANGUAGE}
-
-
-@pytest.fixture
-def mock_translate_grpc_client() -> Iterator[Mock]:
-    """Replace the gRPC client the route depends on with a mock whose `Translate` is async."""
-    translate_grpc_client_mock = Mock(Translate=AsyncMock())
-    app.dependency_overrides[get_translate_grpc_client] = lambda: translate_grpc_client_mock
-    yield translate_grpc_client_mock
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture
