@@ -3,13 +3,6 @@ from functools import cache
 
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
-from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import (
-    GEN_AI_OPERATION_NAME,
-    GEN_AI_PROVIDER_NAME,
-    GEN_AI_REQUEST_MODEL,
-    GenAiOperationNameValues,
-    GenAiProviderNameValues,
-)
 from opentelemetry.trace import SpanKind, get_tracer
 
 from utils.language_name import LanguageName
@@ -19,8 +12,6 @@ apikey = os.environ["OPENAI_API_KEY"]
 
 # deep_translator defaults to gpt-3.5-turbo, which OpenAI has shut down.
 OPENAI_MODEL = "gpt-6-luna"
-
-tracer = get_tracer(__name__)
 
 
 def strip_added_quotes(text: str, translated: str) -> str:
@@ -49,14 +40,19 @@ def translate_text(text: str, target_language: LanguageName = LanguageName.ENGLI
     deep_translator uses the pre-1.0 openai package, which OpenTelemetry's OpenAI
     instrumentation doesn't support, so the span is recorded here. It holds the text lengths,
     not the text, so users' text stays out of the traces. A raised error marks it as failed.
+
+    The gen_ai.* names are written out because opentelemetry-semantic-conventions deprecated
+    its constants for them when the GenAI conventions moved to their own repository
+    (open-telemetry/semantic-conventions-genai), which has no Python package yet.
     """
+    tracer = get_tracer(__name__)
     with tracer.start_as_current_span(
-        f"{GenAiOperationNameValues.CHAT.value} {OPENAI_MODEL}",
+        f"chat {OPENAI_MODEL}",
         kind=SpanKind.CLIENT,
         attributes={
-            GEN_AI_OPERATION_NAME: GenAiOperationNameValues.CHAT.value,
-            GEN_AI_PROVIDER_NAME: GenAiProviderNameValues.OPENAI.value,
-            GEN_AI_REQUEST_MODEL: OPENAI_MODEL,
+            "gen_ai.operation.name": "chat",
+            "gen_ai.provider.name": "openai",
+            "gen_ai.request.model": OPENAI_MODEL,
             "translation.target_language": target_language,
             "translation.text_length": len(text),
         },
