@@ -5,39 +5,21 @@ gRPC server on an ephemeral port, backed by a mock Translation servicer that can
 """
 
 from collections import deque
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from grpc import StatusCode
-from grpc.aio import AioRpcError, server
+from grpc.aio import AioRpcError
 
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest, TranslateResponse
-from translate_proto.translator_pb2_grpc import TranslationStub, add_TranslationServicer_to_server
+from translate_proto.translator_pb2_grpc import TranslationStub
 from web_api_server.grpc_channel import MAX_ATTEMPTS, open_translate_grpc_channel
 from web_api_server.routers.translate import GRPC_TIMEOUT_SECONDS
 
 VALID_TRANSLATE_REQUEST = TranslateRequest(text="hello", language=LANGUAGE_ITALIAN)
 VALID_TRANSLATED_TEXT = "ciao"
-
-
-@pytest.fixture
-async def mock_translation_servicer() -> AsyncIterator[Mock]:
-    """Serve a mock Translation servicer on an ephemeral port, stored on the mock as `address`.
-
-    `Translate` is created before registering, because the server binds that method then.
-    """
-    translation_servicer_mock = Mock(Translate=AsyncMock())
-    grpc_server = server()
-    add_TranslationServicer_to_server(  # type: ignore[no-untyped-call]
-        translation_servicer_mock, grpc_server
-    )
-    grpc_server_ephemeral_port = grpc_server.add_insecure_port("127.0.0.1:0")
-    translation_servicer_mock.address = f"127.0.0.1:{grpc_server_ephemeral_port}"
-    await grpc_server.start()
-    yield translation_servicer_mock
-    await grpc_server.stop(None)
 
 
 async def call_translate_service(server_address: str) -> TranslateResponse:

@@ -13,8 +13,8 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 @pytest.mark.skipif(
     os.environ["OPENAI_API_KEY"] == "test-key", reason="OPENAI_API_KEY not configured"
 )
-async def test_live_translate_hello_to_italian(channel: grpc.aio.Channel) -> None:
-    stub = TranslationStub(channel)  # type: ignore[no-untyped-call]
+async def test_live_translate_hello_to_italian(translate_grpc_channel: grpc.aio.Channel) -> None:
+    stub = TranslationStub(translate_grpc_channel)  # type: ignore[no-untyped-call]
     response = await stub.Translate(TranslateRequest(text="Hello", language=LANGUAGE_ITALIAN))
 
     # The model may add punctuation or capitalisation ("Ciao!"), so normalise first.
