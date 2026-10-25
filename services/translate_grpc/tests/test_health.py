@@ -27,25 +27,25 @@ async def unhealthy_grpc_server_address() -> AsyncIterator[str]:
         await grpc_server.stop(None)
 
 
-async def test_health_check_reports_serving(channel: grpc.aio.Channel) -> None:
+async def test_health_check_reports_serving(translate_grpc_channel: grpc.aio.Channel) -> None:
     """The real server answers a `Health/Check` call with SERVING.
 
     Tests the server side: that the health service is registered and set to SERVING.
     The request leaves `service` empty, which asks about the server as a whole
     rather than about one named service.
     """
-    response = await HealthStub(channel).Check(HealthCheckRequest())
+    response = await HealthStub(translate_grpc_channel).Check(HealthCheckRequest())
 
     assert response.status == HealthCheckResponse.SERVING
 
 
-async def test_is_grpc_server_healthy_when_serving(server_address: str) -> None:
+async def test_is_grpc_server_healthy_when_serving(translate_grpc_server_address: str) -> None:
     """Returns True when the server reports SERVING.
 
     Tests the client side: the helper the container health check runs, which
     turns the server's answer into a bool.
     """
-    assert await is_grpc_server_healthy(server_address)
+    assert await is_grpc_server_healthy(translate_grpc_server_address)
 
 
 async def test_is_grpc_server_healthy_when_not_serving(

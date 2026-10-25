@@ -15,12 +15,12 @@ VALID_TRANSLATE_REQUEST = TranslateRequest(text="hello", language=LANGUAGE_ITALI
 
 async def test_translate_records_one_server_span(
     mock_chat_gpt_translator_translate: Mock,
-    channel: grpc.aio.Channel,
+    translate_grpc_channel: grpc.aio.Channel,
     get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
 ) -> None:
     mock_chat_gpt_translator_translate.return_value = "ciao"
 
-    await TranslationStub(channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
+    await TranslationStub(translate_grpc_channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
 
     [span] = get_finished_spans()
     assert span.name == "/translator.v1.Translation/Translate"
@@ -29,7 +29,7 @@ async def test_translate_records_one_server_span(
 
 async def test_translate_span_joins_the_callers_trace(
     mock_chat_gpt_translator_translate: Mock,
-    channel: grpc.aio.Channel,
+    translate_grpc_channel: grpc.aio.Channel,
     get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
 ) -> None:
     """The server continues the trace named in the call's `traceparent` metadata.
@@ -41,7 +41,7 @@ async def test_translate_span_joins_the_callers_trace(
     parent_span_id = 0xB7AD6B7169203331
     traceparent = f"00-{trace_id:032x}-{parent_span_id:016x}-01"
 
-    await TranslationStub(channel).Translate(  # type: ignore[no-untyped-call]
+    await TranslationStub(translate_grpc_channel).Translate(  # type: ignore[no-untyped-call]
         VALID_TRANSLATE_REQUEST, metadata=[("traceparent", traceparent)]
     )
 
@@ -53,10 +53,10 @@ async def test_translate_span_joins_the_callers_trace(
 
 
 async def test_health_check_records_no_span(
-    channel: grpc.aio.Channel,
+    translate_grpc_channel: grpc.aio.Channel,
     get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
 ) -> None:
     """Docker's health checks are left out, so they don't bury the translation spans."""
-    await HealthStub(channel).Check(HealthCheckRequest())
+    await HealthStub(translate_grpc_channel).Check(HealthCheckRequest())
 
     assert get_finished_spans() == ()

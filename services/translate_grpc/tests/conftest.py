@@ -29,7 +29,7 @@ def mock_chat_gpt_translator_translate() -> Iterator[Mock]:
 
 
 @pytest.fixture
-async def server_address() -> AsyncIterator[str]:
+async def translate_grpc_server_address() -> AsyncIterator[str]:
     """Run the real server's services on an ephemeral port and yield its address."""
     # Imported here because translate_grpc.translation needs OPENAI_API_KEY set above.
     from translate_grpc.server import add_services_to_server, create_grpc_server
@@ -45,7 +45,9 @@ async def server_address() -> AsyncIterator[str]:
 
 
 @pytest.fixture
-async def channel(server_address: str) -> AsyncIterator[grpc.aio.Channel]:
-    """Yield a client channel to the server from `server_address`."""
-    async with grpc.aio.insecure_channel(server_address) as channel:
-        yield channel
+async def translate_grpc_channel(
+    translate_grpc_server_address: str,
+) -> AsyncIterator[grpc.aio.Channel]:
+    """Yield a client channel to the translate gRPC server at `translate_grpc_server_address`."""
+    async with grpc.aio.insecure_channel(translate_grpc_server_address) as translate_grpc_channel:
+        yield translate_grpc_channel

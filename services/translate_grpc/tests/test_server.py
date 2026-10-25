@@ -17,13 +17,13 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 
 @pytest.fixture
 async def client(
-    mock_chat_gpt_translator_translate: Mock, channel: grpc.aio.Channel
+    mock_chat_gpt_translator_translate: Mock, translate_grpc_channel: grpc.aio.Channel
 ) -> TranslationStub:
     """Client stub for a server whose translator is mocked.
 
     Depends on `mock_chat_gpt_translator_translate` so the patch is in place first.
     """
-    return TranslationStub(channel)  # type: ignore[no-untyped-call]
+    return TranslationStub(translate_grpc_channel)  # type: ignore[no-untyped-call]
 
 
 async def test_translate_passes_language_name(
