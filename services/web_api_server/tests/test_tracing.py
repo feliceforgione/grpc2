@@ -54,6 +54,15 @@ def test_request_span_records_error_status_code(
     assert span.attributes["http.status_code"] == 422
 
 
+def test_health_route_records_no_span(
+    get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
+) -> None:
+    """Docker's health checks are left out, so they don't bury the translation spans."""
+    TestClient(app).get("/health")
+
+    assert get_finished_spans() == ()
+
+
 @pytest.fixture
 async def mock_translation_servicer_behind_app(
     mock_translation_servicer: Mock,
