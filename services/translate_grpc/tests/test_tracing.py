@@ -9,16 +9,13 @@ from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.trace import SpanKind, StatusCode
 
 from translate_grpc.translation import OPENAI_MODEL, translate_text
-from translate_proto.languages import convert_to_proto_language
-from translate_proto.translator_pb2 import TranslateRequest
+from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.language_name import LanguageName
 
 VALID_TEXT = "hello"
 VALID_LANGUAGE = LanguageName.ITALIAN
-VALID_TRANSLATE_REQUEST = TranslateRequest(
-    text=VALID_TEXT, language=convert_to_proto_language(VALID_LANGUAGE)
-)
+VALID_TRANSLATE_REQUEST = TranslateRequest(text=VALID_TEXT, language=LANGUAGE_ITALIAN)
 
 
 async def test_translate_records_a_server_span(
@@ -26,7 +23,7 @@ async def test_translate_records_a_server_span(
     translate_grpc_channel: grpc.aio.Channel,
     get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
-    mock_chat_gpt_translator_translate.return_value = "ciao"
+    mock_chat_gpt_translator_translate.return_value = "mock"
 
     await TranslationStub(translate_grpc_channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
 
@@ -43,7 +40,7 @@ async def test_translate_span_joins_the_callers_trace(
 
     This is how the web API server's trace follows its call into this server.
     """
-    mock_chat_gpt_translator_translate.return_value = "ciao"
+    mock_chat_gpt_translator_translate.return_value = "mock"
     trace_id = 0x0AF7651916CD43DD8448EB211C80319C
     parent_span_id = 0xB7AD6B7169203331
     traceparent = f"00-{trace_id:032x}-{parent_span_id:016x}-01"
@@ -75,7 +72,7 @@ async def test_openai_call_records_client_span_under_the_server_span(
     get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     """The call to OpenAI joins the RPC's trace, so it shows how much of the RPC it took."""
-    mock_chat_gpt_translator_translate.return_value = "ciao"
+    mock_chat_gpt_translator_translate.return_value = "mock"
 
     await TranslationStub(translate_grpc_channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
 
@@ -92,7 +89,7 @@ def test_openai_span_records_model_language_and_text_lengths(
     get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
 ) -> None:
     """The span uses the GenAI semantic conventions' names, and never records the text itself."""
-    mock_chat_gpt_translator_translate.return_value = ' "ciao"\n'
+    mock_chat_gpt_translator_translate.return_value = ' "mock"\n'
 
     translate_text(VALID_TEXT, VALID_LANGUAGE)
 
@@ -106,7 +103,7 @@ def test_openai_span_records_model_language_and_text_lengths(
         "translation.target_language": VALID_LANGUAGE,
         "translation.text_length": len(VALID_TEXT),
         # Measured after strip_added_quotes, so it is the length the caller gets back.
-        "translation.translated_text_length": len("ciao"),
+        "translation.translated_text_length": len("mock"),
     }
 
 
