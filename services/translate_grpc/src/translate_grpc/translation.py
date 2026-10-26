@@ -3,8 +3,8 @@ from functools import cache
 
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
-from opentelemetry.trace import SpanKind, get_tracer
 
+from translate_grpc.openai_tracing import trace_openai_translation
 from utils.language_name import LanguageName
 
 load_dotenv()
@@ -35,33 +35,18 @@ def strip_added_quotes(text: str, translated: str) -> str:
 
 
 def translate_text(text: str, target_language: LanguageName = LanguageName.ENGLISH) -> str:
-    """Translate text with OpenAI, recording the call as a span named per the GenAI conventions.
+    """Translate text into the target language with OpenAI."""
+    chat_gpt_answer = _ask_chat_gpt_to_translate(text, target_language)
+    return strip_added_quotes(text, chat_gpt_answer)
 
-    deep_translator uses the pre-1.0 openai package, which OpenTelemetry's OpenAI
-    instrumentation doesn't support, so the span is recorded here. It holds the text lengths,
-    not the text, so users' text stays out of the traces. A raised error marks it as failed.
 
-    The gen_ai.* names are written out because opentelemetry-semantic-conventions deprecated
-    its constants for them when the GenAI conventions moved to their own repository
-    (open-telemetry/semantic-conventions-genai), which has no Python package yet.
-    """
-    tracer = get_tracer(__name__)
-    with tracer.start_as_current_span(
-        f"chat {OPENAI_MODEL}",
-        kind=SpanKind.CLIENT,
-        attributes={
-            "gen_ai.operation.name": "chat",
-            "gen_ai.provider.name": "openai",
-            "gen_ai.request.model": OPENAI_MODEL,
-            "translation.target_language": target_language,
-            "translation.text_length": len(text),
-        },
-    ) as span:
+def _ask_chat_gpt_to_translate(text: str, target_language: LanguageName) -> str:
+    """Send text to ChatGPT for translation and return its answer as is."""
+    with trace_openai_translation(OPENAI_MODEL, text, target_language) as trace:
         # deep_translator has no type hints, so its result is annotated here.
         chat_gpt_answer: str = _get_translator(target_language).translate(text=text)
-        translated_text = strip_added_quotes(text, chat_gpt_answer)
-        span.set_attribute("translation.translated_text_length", len(translated_text))
-    return translated_text
+        trace.record_answer(chat_gpt_answer)
+    return chat_gpt_answer
 
 
 @cache

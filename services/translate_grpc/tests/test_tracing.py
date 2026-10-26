@@ -102,8 +102,8 @@ def test_openai_span_records_model_language_and_text_lengths(
         "gen_ai.request.model": OPENAI_MODEL,
         "translation.target_language": VALID_LANGUAGE,
         "translation.text_length": len(VALID_TEXT),
-        # Measured after strip_added_quotes, so it is the length the caller gets back.
-        "translation.translated_text_length": len("mock"),
+        # Measured before strip_added_quotes, so it is the length OpenAI sent back.
+        "translation.answer_length": len(' "mock"\n'),
     }
 
 
