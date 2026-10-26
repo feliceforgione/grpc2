@@ -51,7 +51,11 @@ app.include_router(website_router)
 app.mount("/static", StaticFiles(directory=WEBSITE_STATIC_DIR), name="static")
 # Record a span for each request. The spans go nowhere until main() calls setup_telemetry().
 # Skipping the ASGI receive/send spans leaves one span per request instead of three or more.
-FastAPIInstrumentor.instrument_app(app, exclude_spans=["receive", "send"])
+# excluded_urls is a regex searched in the request's full URL, without the query string; it
+# leaves out Docker's health checks so they don't add a span every 30s.
+FastAPIInstrumentor.instrument_app(
+    app, excluded_urls=f"{health_router.prefix}$", exclude_spans=["receive", "send"]
+)
 
 
 def main() -> None:
