@@ -8,7 +8,7 @@ from grpc_health.v1.health_pb2_grpc import HealthStub
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.trace import SpanKind, StatusCode
 
-from translate_grpc.translation import OPENAI_MODEL, translate_text
+from translate_grpc.translation import TRANSLATION_MODEL, translate_text
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.language_name import LanguageName
@@ -94,12 +94,12 @@ def test_openai_span_records_model_language_and_text_lengths(
     translate_text(VALID_TEXT, VALID_LANGUAGE)
 
     [span] = get_finished_spans()
-    assert span.name == f"chat {OPENAI_MODEL}"
+    assert span.name == f"chat {TRANSLATION_MODEL}"
     assert span.kind == SpanKind.CLIENT
     assert span.attributes == {
         "gen_ai.operation.name": "chat",
         "gen_ai.provider.name": "openai",
-        "gen_ai.request.model": OPENAI_MODEL,
+        "gen_ai.request.model": TRANSLATION_MODEL,
         "translation.target_language": VALID_LANGUAGE,
         "translation.text_length": len(VALID_TEXT),
         # Measured before strip_added_quotes, so it is the length OpenAI sent back.

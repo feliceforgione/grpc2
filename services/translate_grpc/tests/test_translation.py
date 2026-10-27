@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from deep_translator import ChatGptTranslator
 
-from translate_grpc.translation import OPENAI_MODEL, _get_translator, translate_text
+from translate_grpc.translation import TRANSLATION_MODEL, _get_translator, translate_text
 from utils.language_name import LanguageName
 
 
@@ -34,7 +34,7 @@ def test_translate_text_uses_supported_openai_model() -> None:
     finally:
         _get_translator.cache_clear()
 
-    assert mock_chat_gpt_translator.call_args.kwargs["model"] == OPENAI_MODEL
+    assert mock_chat_gpt_translator.call_args.kwargs["model"] == TRANSLATION_MODEL
 
 
 @pytest.mark.parametrize(
