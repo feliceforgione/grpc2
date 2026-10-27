@@ -22,6 +22,8 @@ services:
     container_name: translate-web-api
     environment:
       TRANSLATE_GRPC_SERVER_ADDRESS: translate-grpc:${TRANSLATE_GRPC_SERVER_PORT:-50051}
+      # Sends spans to Tempo's OTLP gRPC port on the compose network.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
     # Only reachable through Coolify's proxy, which routes the domain to this port.
     expose:
       - "8000"
@@ -55,6 +57,8 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY}
       TRANSLATE_GRPC_SERVER_PORT: ${TRANSLATE_GRPC_SERVER_PORT:-50051}
+      # Sends spans to Tempo's OTLP gRPC port on the compose network.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
     # Private: only the web API server reaches it, on the compose network.
     expose:
       - "${TRANSLATE_GRPC_SERVER_PORT:-50051}"
