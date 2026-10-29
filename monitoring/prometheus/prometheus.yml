@@ -1,11 +1,11 @@
-# Prometheus scrapes each target's /metrics endpoint on this interval and keeps
-# the samples as time series for Grafana to query.
+# The services push their metrics to Prometheus's OTLP receiver, turned on by
+# --web.enable-otlp-receiver in compose.yaml, so they have no /metrics endpoint
+# to scrape. Prometheus keeps the samples as time series for Grafana to query.
 global:
   scrape_interval: 15s
 
 scrape_configs:
-  # Prometheus's own metrics, so there is something to query before the
-  # services expose theirs. Add each service here once it serves /metrics.
+  # Prometheus's own metrics, scraped every scrape_interval.
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]

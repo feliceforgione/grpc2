@@ -24,6 +24,8 @@ services:
       TRANSLATE_GRPC_SERVER_ADDRESS: translate-grpc:${TRANSLATE_GRPC_SERVER_PORT:-50051}
       # Sends spans to Tempo's OTLP gRPC port on the compose network.
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+      # Sends metrics to Prometheus's OTLP receiver, which accepts only HTTP.
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
     # Only reachable through Coolify's proxy, which routes the domain to this port.
     expose:
       - "8000"
@@ -59,6 +61,8 @@ services:
       TRANSLATE_GRPC_SERVER_PORT: ${TRANSLATE_GRPC_SERVER_PORT:-50051}
       # Sends spans to Tempo's OTLP gRPC port on the compose network.
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+      # Sends metrics to Prometheus's OTLP receiver, which accepts only HTTP.
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
     # Private: only the web API server reaches it, on the compose network.
     expose:
       - "${TRANSLATE_GRPC_SERVER_PORT:-50051}"
@@ -75,9 +79,12 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=30d
+      # Lets the services push metrics over OTLP instead of being scraped.
+      - --web.enable-otlp-receiver
     volumes:
       - prometheus-data:/prometheus
-    # Private: only Grafana queries it, on the compose network.
+    # Private: only the services push to it and Grafana queries it, on the
+    # compose network.
     expose:
       - "9090"
     # The image has busybox wget, which exits non-zero on an error status.
