@@ -49,6 +49,13 @@ app.include_router(languages_router)
 app.include_router(translate_router)
 app.include_router(website_router)
 app.mount("/static", StaticFiles(directory=WEBSITE_STATIC_DIR), name="static")
+# Use the stable HTTP semantic conventions instead of the old default ones. Their request
+# duration metric, http.server.request.duration, is in seconds and labelled with the route
+# template, whereas the old http.server.duration labels each request with its raw path, which
+# would make every static file and every unknown URL a separate Prometheus series. The
+# instrumentation reads this once, in instrument_app(), so it's set here rather than in
+# compose.yaml, which keeps the tests and a local run on the same conventions.
+os.environ.setdefault("OTEL_SEMCONV_STABILITY_OPT_IN", "http")
 # Record a span for each request. The spans go nowhere until main() calls setup_telemetry().
 # Skipping the ASGI receive/send spans leaves one span per request instead of three or more.
 # excluded_urls is a regex searched in the request's full URL, without the query string; it
