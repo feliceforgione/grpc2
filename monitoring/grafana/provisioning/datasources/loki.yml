@@ -9,3 +9,14 @@ datasources:
     access: proxy
     url: http://loki:3100
     editable: false
+    jsonData:
+      # Logs sent over OTLP keep their trace ID as trace_id structured metadata,
+      # so a log line written during a request links to that request's trace.
+      # $$ escapes the $, which provisioning would otherwise read as an env var.
+      derivedFields:
+        - name: Trace
+          matcherType: label
+          matcherRegex: trace_id
+          datasourceUid: tempo
+          url: "$${__value.raw}"
+          urlDisplayLabel: View trace
