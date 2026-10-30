@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock
 
 import grpc
@@ -69,3 +70,21 @@ async def test_translator_error_returns_unknown_status(
         await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ENGLISH))
 
     assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
+
+
+async def test_translate_logs_lengths_and_language_but_not_the_text(
+    client: TranslationStub,
+    mock_chat_gpt_translator_translate: Mock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The user's text and its translation stay out of the logs, which are sent to Loki."""
+    mock_chat_gpt_translator_translate.return_value = "mock translation"
+    request = TranslateRequest(text="mock text to translate", language=LANGUAGE_ITALIAN)
+
+    with caplog.at_level(logging.INFO):
+        await client.Translate(request)
+
+    [log_message] = [record.getMessage() for record in caplog.records]
+    assert log_message == "Translated 22 characters to italian, in 16 characters"
+    assert "mock text to translate" not in caplog.text
+    assert "mock translation" not in caplog.text
