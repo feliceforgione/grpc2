@@ -22,7 +22,16 @@ class Translator(TranslationServicer):
     ) -> TranslateResponse:
         await self._validate_request_language(request.language, context)
         language = convert_language_name(request.language)
-        translated_text = translate_text(request.text, language)
+        try:
+            translated_text = translate_text(request.text, language)
+        except Exception:
+            # Logged here, while the RPC's span is still current, so the error in Loki and
+            # Sentry carries its trace ID. gRPC logs it again once the span has ended, which
+            # Sentry drops as a duplicate.
+            logging.exception(
+                "Translation of %d characters to %s failed", len(request.text), language
+            )
+            raise
         # Logs the lengths rather than the text, which is the user's, as the spans do.
         logging.info(
             "Translated %d characters to %s, in %d characters",
