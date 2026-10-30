@@ -122,6 +122,31 @@ services:
       <<: *healthcheck-timings
     restart: unless-stopped
 
+  loki:
+    image: ghcr.io/feliceforgione/grpc2/loki:latest
+    container_name: translate-loki
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - loki-data:/loki
+    # Private: the services send logs to /otlp/v1/logs and Grafana queries the
+    # same port, on the compose network.
+    expose:
+      - "3100"
+    # The image has no shell or wget, so the busybox copied into it calls /ready.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "busybox",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:3100/ready",
+        ]
+      <<: *healthcheck-timings
+    restart: unless-stopped
+
   grafana:
     image: ghcr.io/feliceforgione/grpc2/grafana:latest
     container_name: translate-grafana
@@ -151,10 +176,13 @@ services:
     depends_on:
       - prometheus
       - tempo
+      - loki
     restart: unless-stopped
 
-# Named volumes keep the metrics, traces and Grafana's settings across redeploys.
+# Named volumes keep the metrics, traces, logs and Grafana's settings across
+# redeploys.
 volumes:
   prometheus-data:
   tempo-data:
+  loki-data:
   grafana-data:

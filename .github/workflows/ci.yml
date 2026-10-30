@@ -104,6 +104,8 @@ jobs:
               - monitoring/prometheus/**
             tempo:
               - monitoring/tempo/**
+            loki:
+              - monitoring/loki/**
             grafana:
               - monitoring/grafana/**
 
@@ -130,6 +132,7 @@ jobs:
           "web-api-server": {"context": ".", "file": "services/web_api_server/Dockerfile"},
           "prometheus": {"context": "monitoring/prometheus", "file": "monitoring/prometheus/Dockerfile"},
           "tempo": {"context": "monitoring/tempo", "file": "monitoring/tempo/Dockerfile"},
+          "loki": {"context": "monitoring/loki", "file": "monitoring/loki/Dockerfile"},
           "grafana": {"context": "monitoring/grafana", "file": "monitoring/grafana/Dockerfile"}
         }
     steps:

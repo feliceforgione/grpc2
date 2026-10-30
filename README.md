@@ -79,9 +79,10 @@ Every container has a Docker health check, so Docker and Coolify can tell a hung
 | `web-api-server` | `curl --fail http://127.0.0.1:8000/health`     | `GET /health` answers 200 (it doesn't call the gRPC server) |
 | `prometheus`     | `wget http://127.0.0.1:9090/-/ready`           | Prometheus is ready to serve queries                        |
 | `tempo`          | `/tempo -health`                               | Tempo's `/ready` endpoint answers 200                       |
+| `loki`           | `busybox wget http://127.0.0.1:3100/ready`     | Loki is ready to receive logs and serve queries             |
 | `grafana`        | `curl --fail http://127.0.0.1:3300/api/health` | Grafana and its database are up                             |
 
-curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too. Tempo's image has no shell or curl, so it uses Tempo's built-in check.
+curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too. Tempo's image has no shell or curl, so it uses Tempo's built-in check. Loki's image has neither, and Loki has no built-in check, so its Dockerfile copies in a static busybox for the check's `wget`.
 
 No check sends a request to OpenAI. Docker runs them every 30s, and every 2s during the first 15s after a container starts. A container turns `unhealthy` after 3 failures in a row, and a check that takes longer than 5s counts as a failure. `web-api-server` only starts once `translate-grpc` is healthy. Check the status with:
 
@@ -89,13 +90,13 @@ No check sends a request to OpenAI. Docker runs them every 30s, and every 2s dur
 docker compose ps
 ```
 
-On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA. The same goes for the Prometheus, Tempo and Grafana images, which CI rebuilds when their folder in `monitoring/` changes. It then tells Coolify to redeploy.
+On every push to `main`, once the tests, type check and lint pass, CI rebuilds the images whose contents changed (the service's folder, `packages/`, `pyproject.toml`, `uv.lock` or `.dockerignore`) and pushes them to GHCR as `ghcr.io/feliceforgione/grpc2/<service>`, tagged `latest` and with the commit SHA. The same goes for the Prometheus, Tempo, Loki and Grafana images, which CI rebuilds when their folder in `monitoring/` changes. It then tells Coolify to redeploy.
 
 ### Monitoring
 
-`compose.yaml` also runs Prometheus, Tempo and Grafana, configured from the files in `monitoring/`. Each one's config is built into its image by the Dockerfile in its folder, because Coolify doesn't copy the repo's files onto the server, so a config change reaches the server through a new image. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Grafana starts with Prometheus and Tempo already set up as its data sources. All three keep their data in named volumes, so it survives restarts and redeploys.
+`compose.yaml` also runs Prometheus, Tempo, Loki and Grafana, configured from the files in `monitoring/`. Each one's config is built into its image by the Dockerfile in its folder, because Coolify doesn't copy the repo's files onto the server, so a config change reaches the server through a new image. Prometheus scrapes the targets listed in `monitoring/prometheus/prometheus.yml` every 15 seconds and keeps 30 days of samples. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Loki receives logs over OTLP HTTP, at `http://loki:3100/otlp/v1/logs` on the compose network, and keeps them for 14 days. Grafana starts with Prometheus, Tempo and Loki already set up as its data sources. All four keep their data in named volumes, so it survives restarts and redeploys.
 
-Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/ and Tempo's API is at http://127.0.0.1:3200/. On the server, Prometheus and Tempo stay private and Coolify's proxy routes a domain to Grafana's port 3300.
+Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/ Tempo's API is at http://127.0.0.1:3200/ and Loki's API is at http://127.0.0.1:3100/. On the server, Prometheus, Tempo and Loki stay private and Coolify's proxy routes a domain to Grafana's port 3300.
 
 ### Environment variables:
 
