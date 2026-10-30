@@ -27,6 +27,11 @@ services:
     ports:
       - "127.0.0.1:3200:3200"
 
+  loki:
+    build: monitoring/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+
   grafana:
     build: monitoring/grafana
     ports:

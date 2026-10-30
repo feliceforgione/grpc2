@@ -1,0 +1,11 @@
+# Grafana loads this on startup, so the Loki data source exists without
+# setting it up in the UI. The fixed uid lets dashboards refer to it.
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
