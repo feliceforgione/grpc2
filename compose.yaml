@@ -28,6 +28,9 @@ services:
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
       # Sends logs to Loki's OTLP endpoint, which accepts only HTTP.
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://loki:3100/otlp/v1/logs
+      # Sends errors to Sentry when SENTRY_DSN is set; without it nothing is sent.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     # Only reachable through Coolify's proxy, which routes the domain to this port.
     expose:
       - "8000"
@@ -67,6 +70,9 @@ services:
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
       # Sends logs to Loki's OTLP endpoint, which accepts only HTTP.
       OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://loki:3100/otlp/v1/logs
+      # Sends errors to Sentry when SENTRY_DSN is set; without it nothing is sent.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     # Private: only the web API server reaches it, on the compose network.
     expose:
       - "${TRANSLATE_GRPC_SERVER_PORT:-50051}"

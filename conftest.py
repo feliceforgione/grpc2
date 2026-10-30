@@ -3,6 +3,7 @@
 from collections.abc import Callable, Iterator
 
 import pytest
+import sentry_sdk
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, ReadableLogRecord
@@ -21,7 +22,11 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.trace import SpanKind, set_tracer_provider
+from sentry_sdk.envelope import Envelope
+from sentry_sdk.transport import Transport
+from sentry_sdk.types import Event
 
+from utils.error_tracking import create_sentry_options
 from utils.telemetry import add_logging_handler
 
 
@@ -142,3 +147,34 @@ def get_finished_log_records(
     log_record_exporter = set_up_in_memory_logger_provider
     log_record_exporter.clear()
     yield log_record_exporter.get_finished_logs
+
+
+class InMemorySentryTransport(Transport):
+    """A Sentry transport that keeps the events it's given instead of sending them."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.events: list[Event] = []
+
+    def capture_envelope(self, envelope: Envelope) -> None:
+        event = envelope.get_event()
+        if event is not None:
+            self.events.append(event)
+
+
+@pytest.fixture
+def get_sentry_events() -> Iterator[Callable[[], list[Event]]]:
+    """Start Sentry with the services' options and an in-memory transport, and yield a function
+    returning the events this test sent; Sentry is turned off again after the test."""
+    sentry_transport = InMemorySentryTransport()
+    sentry_sdk.init(
+        **create_sentry_options("https://public-key@sentry.invalid/1"), transport=sentry_transport
+    )
+
+    def get_events() -> list[Event]:
+        sentry_sdk.flush()
+        return sentry_transport.events
+
+    yield get_events
+    sentry_sdk.get_client().close()
+    sentry_sdk.init(dsn=None)

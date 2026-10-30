@@ -110,6 +110,16 @@ To read them in Grafana:
 
 Logs are kept for 14 days, so don't log anything that shouldn't be stored, such as the user's text or API keys.
 
+#### Errors
+
+When `SENTRY_DSN` is set, both services also send their errors to [Sentry](https://sentry.io/)'s hosted free tier: uncaught exceptions, and records logged at ERROR and above (e.g. a failed translation). Sentry groups repeats of the same error into one issue, keeps its stack trace and alerts on errors it hasn't seen before. It only gets errors: logs, traces and metrics stay in Loki, Tempo and Prometheus, so Sentry's own tracing is off.
+
+To set it up, create a Python project in Sentry, copy its DSN from **Project Settings → Client Keys**, and set `SENTRY_DSN` in `.env` locally or in Coolify on the server. Without it, as in the tests, nothing is sent. Errors are tagged with `service` and with the environment from `SENTRY_ENVIRONMENT` (`production` unless set, so set it to `local` on your machine).
+
+Each error is also tagged with the `trace_id` of the request it happened in. Search for it in Grafana's Explore, in Tempo for the request's trace or in Loki with `| trace_id="<id>"` for its log lines.
+
+No user text reaches Sentry: request bodies, headers, cookies, query strings and the local variables in stack traces are all left out, and the services don't log the text. A failed call from the web API server to the translate service is logged as a warning, not an error, since the translate service reports the failure itself.
+
 ### Environment variables:
 
 | Variable                        | Default           | Description                |
@@ -117,6 +127,8 @@ Logs are kept for 14 days, so don't log anything that shouldn't be stored, such 
 | `TRANSLATE_GRPC_SERVER_ADDRESS` | `127.0.0.1:50051` | Address of the gRPC server |
 | `WEB_API_SERVER_HOST`           | `127.0.0.1`       | Host the API binds to      |
 | `WEB_API_SERVER_PORT`           | `8000`            | Port the API listens on    |
+| `SENTRY_DSN`                    | unset             | Sentry project to send errors to; unset sends nothing |
+| `SENTRY_ENVIRONMENT`            | `production`      | Environment Sentry tags errors with |
 
 ### Synthetic traffic
 

@@ -13,6 +13,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.constants import LOOPBACK_IPV4, TRANSLATE_GRPC_SERVER_PORT
+from utils.error_tracking import setup_error_tracking, tag_request_errors_with_trace
 from utils.telemetry import setup_telemetry
 from web_api_server.grpc_channel import open_translate_grpc_channel
 from web_api_server.grpc_errors import handle_grpc_error_response
@@ -59,9 +60,13 @@ os.environ.setdefault("OTEL_SEMCONV_STABILITY_OPT_IN", "http")
 # Record a span for each request. The spans go nowhere until main() calls setup_telemetry().
 # Skipping the ASGI receive/send spans leaves one span per request instead of three or more.
 # excluded_urls is a regex searched in the request's full URL, without the query string; it
-# leaves out Docker's health checks so they don't add a span every 30s.
+# leaves out Docker's health checks so they don't add a span every 30s. The hook tags the errors
+# Sentry captures during a request with that request's trace.
 FastAPIInstrumentor.instrument_app(
-    app, excluded_urls=f"{health_router.prefix}$", exclude_spans=["receive", "send"]
+    app,
+    excluded_urls=f"{health_router.prefix}$",
+    exclude_spans=["receive", "send"],
+    server_request_hook=tag_request_errors_with_trace,
 )
 
 
@@ -69,6 +74,7 @@ def main() -> None:
     """Run the app with uvicorn on WEB_API_SERVER_HOST and WEB_API_SERVER_PORT."""
     logging.basicConfig(level=logging.INFO)
     setup_telemetry("web-api-server")
+    setup_error_tracking("web-api-server")
     uvicorn.run(app, host=WEB_API_SERVER_HOST, port=WEB_API_SERVER_PORT)
 
 

@@ -10,6 +10,7 @@ from opentelemetry.instrumentation.grpc.filters import health_check, negate
 from translate_grpc.health_servicer import add_health_service_to_server
 from translate_grpc.translator_servicer import add_translation_service_to_server
 from utils.constants import TRANSLATE_GRPC_SERVER_PORT
+from utils.error_tracking import setup_error_tracking
 from utils.telemetry import setup_telemetry
 
 
@@ -40,6 +41,7 @@ async def serve() -> None:
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     setup_telemetry("translate-grpc")
+    setup_error_tracking("translate-grpc")
     asyncio.run(serve())
 
 
