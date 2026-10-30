@@ -3,6 +3,17 @@
 from collections.abc import Callable, Iterator
 
 import pytest
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk.metrics import (
+    Counter,
+    Histogram,
+    MeterProvider,
+    ObservableCounter,
+    ObservableGauge,
+    ObservableUpDownCounter,
+    UpDownCounter,
+)
+from opentelemetry.sdk.metrics.export import AggregationTemporality, InMemoryMetricReader, Metric
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -50,3 +61,49 @@ def get_finished_spans_by_kind(
         return spans_by_kind
 
     return get_spans_by_kind
+
+
+@pytest.fixture(scope="session")
+def set_up_in_memory_meter_provider() -> InMemoryMetricReader:
+    """Install a global meter provider that keeps metrics in memory, and return its reader.
+
+    Like the tracer provider, the global meter provider can be set only once per process.
+    The reader uses delta temporality, so each read returns only what was recorded since the
+    previous read, rather than running totals that include earlier tests.
+    """
+    delta = AggregationTemporality.DELTA
+    metric_reader = InMemoryMetricReader(
+        preferred_temporality={
+            Counter: delta,
+            UpDownCounter: delta,
+            Histogram: delta,
+            ObservableCounter: delta,
+            ObservableUpDownCounter: delta,
+            ObservableGauge: delta,
+        }
+    )
+    set_meter_provider(MeterProvider(metric_readers=[metric_reader]))
+    return metric_reader
+
+
+@pytest.fixture
+def get_recorded_metrics_by_name(
+    set_up_in_memory_meter_provider: InMemoryMetricReader,
+) -> Callable[[], dict[str, Metric]]:
+    """Discard the metrics earlier tests recorded, and return a function mapping the name of
+    each metric this test recorded to that metric."""
+    metric_reader = set_up_in_memory_meter_provider
+    metric_reader.get_metrics_data()
+
+    def get_metrics() -> dict[str, Metric]:
+        metrics_data = metric_reader.get_metrics_data()
+        if metrics_data is None:
+            return {}
+        return {
+            metric.name: metric
+            for resource_metrics in metrics_data.resource_metrics
+            for scope_metrics in resource_metrics.scope_metrics
+            for metric in scope_metrics.metrics
+        }
+
+    return get_metrics
