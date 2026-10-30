@@ -12,3 +12,14 @@ datasources:
     jsonData:
       streamingEnabled:
         search: true
+      # Each span links to the log lines both services wrote during its trace.
+      # They match on the trace_id structured metadata Loki keeps for OTLP logs,
+      # rather than searching the log text for the ID. The time shifts widen
+      # the search past the span, since logs can be written just before or
+      # after it. $$ escapes the $, as in loki.yml.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-1m"
+        spanEndTimeShift: "1m"
+        customQuery: true
+        query: '{service_name=~"web-api-server|translate-grpc"} | trace_id="$${__span.traceId}"'
