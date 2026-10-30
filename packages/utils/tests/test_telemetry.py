@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from opentelemetry.sdk.resources import SERVICE_NAME
 
-from utils.telemetry import create_meter_provider, create_tracer_provider
+from utils.telemetry import create_logger_provider, create_meter_provider, create_tracer_provider
 
 MOCK_SERVICE_NAME = "foo"
 
@@ -44,3 +44,15 @@ def test_create_meter_provider_exports_metrics_over_otlp_tagged_with_service_nam
     metrics_data = mock_otlp_metric_exporter.return_value.export.call_args.args[0]
     resource = metrics_data.resource_metrics[0].resource
     assert resource.attributes[SERVICE_NAME] == MOCK_SERVICE_NAME
+
+
+def test_create_logger_provider_exports_logs_over_otlp_tagged_with_service_name() -> None:
+    with patch("utils.telemetry.OTLPLogExporter") as mock_otlp_log_exporter:
+        logger_provider = create_logger_provider(MOCK_SERVICE_NAME)
+        logger_provider.get_logger(__name__).emit(body="foo")
+        logger_provider.force_flush()
+
+    mock_otlp_log_exporter.return_value.export.assert_called_once()
+    [log_record] = mock_otlp_log_exporter.return_value.export.call_args.args[0]
+    assert log_record.log_record.body == "foo"
+    assert log_record.resource.attributes[SERVICE_NAME] == MOCK_SERVICE_NAME

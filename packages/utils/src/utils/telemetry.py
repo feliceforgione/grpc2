@@ -1,13 +1,24 @@
 """Set up the OpenTelemetry SDK that turns the services' OpenTelemetry API calls into data.
 
-Code that records telemetry imports only the API (opentelemetry.trace, opentelemetry.metrics).
-Until a service calls setup_telemetry(), those calls are no-ops, which is why tests that never
-call it stay quiet.
+Code that records telemetry imports only the API (opentelemetry.trace, opentelemetry.metrics),
+or Python's logging. Until a service calls setup_telemetry(), those calls are no-ops, apart from
+logging's own handlers, which is why tests that never call it stay quiet.
+
+The logs SDK is still experimental, which is why its modules (opentelemetry._logs,
+opentelemetry.sdk._logs and the OTLP _log_exporter) have a leading underscore; their names may
+change in a later release.
 """
 
+from logging import getLogger
+
+from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.instrumentation.logging.handler import LoggingHandler
 from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
@@ -45,9 +56,31 @@ def create_meter_provider(service_name: str) -> MeterProvider:
     )
 
 
+def create_logger_provider(service_name: str) -> LoggerProvider:
+    """Create a logger provider that tags log records with service_name and sends them over
+    OTLP HTTP."""
+    # Like the metric exporter, OTLPLogExporter reads its own OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+    # env var, since Loki's OTLP endpoint accepts only HTTP.
+    logger_provider = LoggerProvider(resource=create_service_resource(service_name))
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    return logger_provider
+
+
+def add_logging_handler() -> None:
+    """Send every record Python's logging lets through to the global logger provider.
+
+    The handler goes on the root logger, alongside any handler logging.basicConfig() added, so
+    the logs still print to stdout too. Each record carries the trace and span IDs of the span
+    that was current when it was logged.
+    """
+    getLogger().addHandler(LoggingHandler())
+
+
 def setup_telemetry(service_name: str) -> None:
-    """Install the tracer and meter providers globally; call it once, from the service's
-    main()."""
-    # The providers flush their pending spans and metrics when the process exits.
+    """Install the tracer, meter and logger providers globally, and send Python's logging
+    to the logger provider; call it once, from the service's main()."""
+    # The providers flush their pending spans, metrics and logs when the process exits.
     set_tracer_provider(create_tracer_provider(service_name))
     set_meter_provider(create_meter_provider(service_name))
+    set_logger_provider(create_logger_provider(service_name))
+    add_logging_handler()

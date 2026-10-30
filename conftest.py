@@ -3,7 +3,10 @@
 from collections.abc import Callable, Iterator
 
 import pytest
+from opentelemetry._logs import set_logger_provider
 from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk._logs import LoggerProvider, ReadableLogRecord
+from opentelemetry.sdk._logs.export import InMemoryLogRecordExporter, SimpleLogRecordProcessor
 from opentelemetry.sdk.metrics import (
     Counter,
     Histogram,
@@ -18,6 +21,8 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.trace import SpanKind, set_tracer_provider
+
+from utils.telemetry import add_logging_handler
 
 
 @pytest.fixture(scope="session")
@@ -107,3 +112,33 @@ def get_recorded_metrics_by_name(
         }
 
     return get_metrics
+
+
+@pytest.fixture(scope="session")
+def set_up_in_memory_logger_provider() -> InMemoryLogRecordExporter:
+    """Install a global logger provider that keeps log records in memory, send Python's logging
+    to it as setup_telemetry() does, and return its exporter.
+
+    Like the other providers, the global logger provider can be set only once per process.
+    """
+    log_record_exporter = InMemoryLogRecordExporter()
+    logger_provider = LoggerProvider()
+    logger_provider.add_log_record_processor(SimpleLogRecordProcessor(log_record_exporter))
+    set_logger_provider(logger_provider)
+    add_logging_handler()
+    return log_record_exporter
+
+
+@pytest.fixture
+def get_finished_log_records(
+    set_up_in_memory_logger_provider: InMemoryLogRecordExporter,
+) -> Iterator[Callable[[], tuple[ReadableLogRecord, ...]]]:
+    """Clear the log records earlier tests recorded, and yield a function returning this
+    test's records.
+
+    pytest's root logger only lets warnings and above through, so a test of an info record
+    lowers the level with caplog.at_level(logging.INFO).
+    """
+    log_record_exporter = set_up_in_memory_logger_provider
+    log_record_exporter.clear()
+    yield log_record_exporter.get_finished_logs
