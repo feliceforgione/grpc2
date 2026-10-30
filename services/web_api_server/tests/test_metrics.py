@@ -3,6 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
+from grpc import StatusCode
+from grpc.aio import AioRpcError
 from opentelemetry.sdk.metrics.export import HistogramDataPoint, Metric
 
 from translate_proto.translator_pb2 import TranslateResponse
@@ -58,6 +60,25 @@ def test_request_duration_records_error_status_code(
     [request_duration] = get_request_durations(get_recorded_metrics_by_name())
     assert request_duration.attributes is not None
     assert request_duration.attributes["http.response.status_code"] == 422
+
+
+def test_failed_grpc_call_records_server_error_status_code(
+    mock_translate_grpc_client: Mock,
+    get_recorded_metrics_by_name: Callable[[], dict[str, Metric]],
+) -> None:
+    """A request the translate service fails is timed with its 5xx status code.
+
+    The dashboard's availability panels count these 5xx responses as unavailable.
+    """
+    mock_translate_grpc_client.Translate.side_effect = AioRpcError(
+        StatusCode.INTERNAL, Mock(), Mock(), details="upstream failure", debug_error_string=None
+    )
+
+    TestClient(app).post(TRANSLATE_URL, json=VALID_JSON_BODY)
+
+    [request_duration] = get_request_durations(get_recorded_metrics_by_name())
+    assert request_duration.attributes is not None
+    assert request_duration.attributes["http.response.status_code"] == 502
 
 
 def test_unknown_url_records_no_route(
