@@ -1,0 +1,13 @@
+# Grafana loads this on startup and creates a dashboard from each JSON file in
+# this folder, so the dashboards exist without building them in the UI. A
+# dashboard can be changed and saved in the UI to try things out, but the JSON
+# here replaces those changes when Grafana restarts, so export the dashboard
+# and save it here to keep them.
+apiVersion: 1
+
+providers:
+  - name: dashboards
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
