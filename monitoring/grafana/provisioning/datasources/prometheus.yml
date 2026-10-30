@@ -10,3 +10,8 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: false
+    jsonData:
+      # The services push metrics every 60s (OTEL_METRIC_EXPORT_INTERVAL's
+      # default), not every 15s scrape. Grafana sizes $__rate_interval from
+      # this, to at least 4 samples, so rate() always has two to compare.
+      timeInterval: 60s

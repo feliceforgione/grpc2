@@ -35,7 +35,7 @@ def test_request_records_one_server_span(
     assert span.kind == SpanKind.SERVER
     assert span.attributes is not None
     assert span.attributes["http.route"] == TRANSLATE_URL
-    assert span.attributes["http.status_code"] == 200
+    assert span.attributes["http.response.status_code"] == 200
 
 
 @pytest.mark.usefixtures("mock_translate_grpc_client")
@@ -51,7 +51,7 @@ def test_request_span_records_error_status_code(
 
     [span] = get_finished_spans()
     assert span.attributes is not None
-    assert span.attributes["http.status_code"] == 422
+    assert span.attributes["http.response.status_code"] == 422
 
 
 def test_health_route_records_no_span(

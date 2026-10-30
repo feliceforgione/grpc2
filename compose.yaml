@@ -81,6 +81,9 @@ services:
       - --storage.tsdb.retention.time=30d
       # Lets the services push metrics over OTLP instead of being scraped.
       - --web.enable-otlp-receiver
+      # Stores a 0 at each counter's start time, so rate() and increase() count
+      # the requests a new counter recorded before its first push.
+      - --enable-feature=created-timestamp-zero-ingestion
     volumes:
       - prometheus-data:/prometheus
     # Private: only the services push to it and Grafana queries it, on the

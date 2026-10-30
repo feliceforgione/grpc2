@@ -4,6 +4,7 @@ from functools import cache
 from deep_translator import ChatGptTranslator
 from dotenv import load_dotenv
 
+from translate_grpc.translation_metrics import count_translation
 from translate_grpc.translation_tracing import trace_translation
 from utils.language_name import LanguageName
 
@@ -37,7 +38,8 @@ def strip_added_quotes(text: str, translated: str) -> str:
 
 def translate_text(text: str, target_language: LanguageName = LanguageName.ENGLISH) -> str:
     """Translate text into the target language."""
-    raw_translation = _request_translation(text, target_language)
+    with count_translation(target_language):
+        raw_translation = _request_translation(text, target_language)
     return strip_added_quotes(text, raw_translation)
 
 
