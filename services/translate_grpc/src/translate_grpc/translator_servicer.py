@@ -23,7 +23,13 @@ class Translator(TranslationServicer):
         await self._validate_request_language(request.language, context)
         language = convert_language_name(request.language)
         translated_text = translate_text(request.text, language)
-        logging.info("%s translated to [%s] %s", request.text, language, translated_text)
+        # Logs the lengths rather than the text, which is the user's, as the spans do.
+        logging.info(
+            "Translated %d characters to %s, in %d characters",
+            len(request.text),
+            language,
+            len(translated_text),
+        )
         return TranslateResponse(translated_text=translated_text)
 
     async def _validate_request_language(
