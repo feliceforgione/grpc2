@@ -96,7 +96,19 @@ On every push to `main`, once the tests, type check and lint pass, CI rebuilds t
 
 `compose.yaml` also runs Prometheus, Tempo, Loki and Grafana, configured from the files in `monitoring/`. Each one's config is built into its image by the Dockerfile in its folder, because Coolify doesn't copy the repo's files onto the server, so a config change reaches the server through a new image. Prometheus receives metrics over OTLP HTTP, at `http://prometheus:9090/api/v1/otlp/v1/metrics` on the compose network, which the services push to every 60 seconds, and keeps 30 days of samples. The services have no `/metrics` endpoint to scrape; Prometheus only scrapes its own metrics. Tempo receives traces over OTLP, at `tempo:4317` (gRPC) or `tempo:4318` (HTTP) on the compose network, and keeps them for 14 days. Loki receives logs over OTLP HTTP, at `http://loki:3100/otlp/v1/logs` on the compose network, and keeps them for 14 days. Grafana starts with Prometheus, Tempo and Loki already set up as its data sources. All four keep their data in named volumes, so it survives restarts and redeploys.
 
-Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/ Tempo's API is at http://127.0.0.1:3200/ and Loki's API is at http://127.0.0.1:3100/. On the server, Prometheus, Tempo and Loki stay private and Coolify's proxy routes a domain to Grafana's port 3300.
+Running locally, Grafana is at http://127.0.0.1:3300/ (log in as `admin` with the `GRAFANA_ADMIN_PASSWORD` from your `.env`), Prometheus is at http://127.0.0.1:9090/, Tempo's API is at http://127.0.0.1:3200/ and Loki's API is at http://127.0.0.1:3100/. On the server, Prometheus, Tempo and Loki stay private and Coolify's proxy routes a domain to Grafana's port 3300.
+
+#### Logs
+
+Both services send every record Python's `logging` writes at INFO and above to Loki, tagged with the service name (`service_name`) and, when it's written during a request, that request's trace and span IDs (`trace_id`, `span_id`). The same lines still print to each container's output, so `docker logs translate-grpc` and Coolify's log view keep working. uvicorn's own startup and access lines only go to the container's output, and nothing is sent while the tests run.
+
+To read them in Grafana:
+
+- The **Logs** tab of the **Web API Requests** dashboard shows the log volume by service and level, the warnings and errors, and all recent lines.
+- In **Explore**, pick the **Loki** data source and query, for example, `{service_name="web-api-server"}` or `{service_name=~"web-api-server|translate-grpc"} | detected_level="warn"`.
+- Open a log line and use **View trace** to see the request that wrote it in Tempo. From a span in a trace, **Related logs** lists the lines both services wrote during that trace.
+
+Logs are kept for 14 days, so don't log anything that shouldn't be stored, such as the user's text or API keys.
 
 ### Environment variables:
 
