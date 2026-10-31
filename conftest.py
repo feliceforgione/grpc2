@@ -1,6 +1,7 @@
 """Fixtures shared by the tests of every service and package."""
 
 from collections.abc import Callable, Iterator
+from os import environ
 
 import pytest
 import sentry_sdk
@@ -28,6 +29,11 @@ from sentry_sdk.types import Event
 
 from utils.error_tracking import create_sentry_options
 from utils.telemetry import add_logging_handler
+
+# Keeps the tests from sending errors to a real Sentry project. Sentry falls back to SENTRY_DSN
+# when it's started without a DSN, and the services' load_dotenv() calls would otherwise copy a
+# real one from .env, since they don't override a variable that's already set, even to "".
+environ["SENTRY_DSN"] = ""
 
 
 @pytest.fixture(scope="session")
@@ -177,4 +183,5 @@ def get_sentry_events() -> Iterator[Callable[[], list[Event]]]:
 
     yield get_events
     sentry_sdk.get_client().close()
-    sentry_sdk.init(dsn=None)
+    # An empty DSN turns Sentry off; None would fall back to SENTRY_DSN.
+    sentry_sdk.init(dsn="")
