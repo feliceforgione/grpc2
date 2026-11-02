@@ -11,6 +11,8 @@ from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 
 
+# Nothing here calls this by name: it overrides conftest.py's translation_provider, which
+# translate_grpc_server_address asks for, so this file's server uses the real provider.
 @pytest.fixture
 def translation_provider() -> TranslationProvider:
     """Translate with the real provider, which calls OpenAI, instead of the mock."""
