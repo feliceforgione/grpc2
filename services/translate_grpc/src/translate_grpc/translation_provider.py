@@ -1,6 +1,6 @@
 """The interface translate_text uses to ask a model for a translation."""
 
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from utils.language_name import LanguageName
 
@@ -13,8 +13,8 @@ class TranslationProvider(Protocol):
     """
 
     # Recorded on the span as gen_ai.provider.name and gen_ai.request.model.
-    provider_name: str
-    model: str
+    PROVIDER_NAME: ClassVar[str]
+    MODEL: ClassVar[str]
 
     def request_translation(self, text: str, target_language: LanguageName) -> str:
         """Send text to the model for translation and return its answer as is."""

@@ -14,8 +14,8 @@ from utils.constants import LOOPBACK_IPV4
 def mock_translation_provider() -> Mock:
     """A provider that never calls a model"""
     mock_translation_provider = Mock(spec=TranslationProvider)
-    mock_translation_provider.provider_name = "mock-provider"
-    mock_translation_provider.model = "mock-model"
+    mock_translation_provider.PROVIDER_NAME = "mock-provider"
+    mock_translation_provider.MODEL = "mock-model"
     return mock_translation_provider
 
 

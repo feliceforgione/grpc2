@@ -94,12 +94,12 @@ def test_openai_span_records_model_language_and_text_lengths(
     translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
 
     [span] = get_finished_spans()
-    assert span.name == f"chat {mock_translation_provider.model}"
+    assert span.name == f"chat {mock_translation_provider.MODEL}"
     assert span.kind == SpanKind.CLIENT
     assert span.attributes == {
         "gen_ai.operation.name": "chat",
-        "gen_ai.provider.name": mock_translation_provider.provider_name,
-        "gen_ai.request.model": mock_translation_provider.model,
+        "gen_ai.provider.name": mock_translation_provider.PROVIDER_NAME,
+        "gen_ai.request.model": mock_translation_provider.MODEL,
         "translation.target_language": VALID_LANGUAGE,
         "translation.text_length": len(VALID_TEXT),
         # Measured before strip_added_quotes, so it is the length the provider sent back.

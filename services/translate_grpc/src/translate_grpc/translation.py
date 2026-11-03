@@ -43,7 +43,7 @@ def _request_translation(
     # the pre-1.0 openai package, which OpenTelemetry's OpenAI instrumentation doesn't
     # support), so the call is traced by hand.
     with trace_translation(
-        translation_provider.provider_name, translation_provider.model, text, target_language
+        translation_provider.PROVIDER_NAME, translation_provider.MODEL, text, target_language
     ) as trace:
         translation = translation_provider.request_translation(text, target_language)
         trace.record_answer(translation)

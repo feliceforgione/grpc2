@@ -1,5 +1,7 @@
 """The translation provider that calls OpenAI through deep_translator's ChatGptTranslator."""
 
+from typing import ClassVar
+
 from deep_translator import ChatGptTranslator
 
 from utils.language_name import LanguageName
@@ -8,9 +10,9 @@ from utils.language_name import LanguageName
 class DeepTranslatorProvider:
     """Translate with OpenAI through deep_translator, building one translator per language."""
 
-    provider_name = "openai"
+    PROVIDER_NAME: ClassVar[str] = "openai"
     # deep_translator defaults to gpt-3.5-turbo, which OpenAI has shut down.
-    model = "gpt-6-luna"
+    MODEL: ClassVar[str] = "gpt-6-luna"
 
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
@@ -29,6 +31,6 @@ class DeepTranslatorProvider:
                 api_key=self._api_key,
                 source=LanguageName.ENGLISH,
                 target=target_language,
-                model=self.model,
+                model=self.MODEL,
             )
         return self._language_translators[target_language]

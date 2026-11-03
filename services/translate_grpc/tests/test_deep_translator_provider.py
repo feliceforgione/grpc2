@@ -46,9 +46,9 @@ def test_translator_is_built_with_key_language_and_supported_model(
         api_key=VALID_API_KEY,
         source=LanguageName.ENGLISH,
         target=VALID_LANGUAGE,
-        model=deep_translator_provider.model,
+        model=deep_translator_provider.MODEL,
     )
-    assert deep_translator_provider.model == "gpt-6-luna"
+    assert deep_translator_provider.MODEL == "gpt-6-luna"
 
 
 def test_translator_is_built_once_per_language(
