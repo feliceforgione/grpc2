@@ -8,6 +8,7 @@ from utils.language_name import LanguageName
 
 VALID_API_KEY = "test-key"
 VALID_LANGUAGE = LanguageName.ITALIAN
+MODEL_USED = "gpt-6-luna"
 
 
 @pytest.fixture
@@ -28,19 +29,23 @@ def deep_translator_provider(mock_chat_gpt_translator: Mock) -> DeepTranslatorPr
 def test_request_translation_returns_the_translators_answer(
     mock_chat_gpt_translator: Mock, deep_translator_provider: DeepTranslatorProvider
 ) -> None:
-    mock_chat_gpt_translator.return_value.translate.return_value = ' "ciao"\n'
+    text_to_translate = "mock text to translate"
+    expected_translation = ' "mock translation"\n'
+    mock_chat_gpt_translator.return_value.translate.return_value = expected_translation
 
-    raw_translation = deep_translator_provider.request_translation("hello", VALID_LANGUAGE)
+    raw_translation = deep_translator_provider.request_translation(
+        text_to_translate, VALID_LANGUAGE
+    )
 
     # Returned as is; translate_text does the clean-up.
-    assert raw_translation == ' "ciao"\n'
-    mock_chat_gpt_translator.return_value.translate.assert_called_once_with(text="hello")
+    assert raw_translation == expected_translation
+    mock_chat_gpt_translator.return_value.translate.assert_called_once_with(text=text_to_translate)
 
 
 def test_translator_is_built_with_key_language_and_supported_model(
     mock_chat_gpt_translator: Mock, deep_translator_provider: DeepTranslatorProvider
 ) -> None:
-    deep_translator_provider.request_translation("hello", VALID_LANGUAGE)
+    deep_translator_provider.request_translation("mock text to translate", VALID_LANGUAGE)
 
     mock_chat_gpt_translator.assert_called_once_with(
         api_key=VALID_API_KEY,
@@ -48,7 +53,7 @@ def test_translator_is_built_with_key_language_and_supported_model(
         target=VALID_LANGUAGE,
         model=deep_translator_provider.MODEL,
     )
-    assert deep_translator_provider.MODEL == "gpt-6-luna"
+    assert deep_translator_provider.MODEL == MODEL_USED
 
 
 def test_translator_is_built_once_per_language(
