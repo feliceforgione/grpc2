@@ -9,5 +9,11 @@
     }
   },
   "ruff.importStrategy": "fromEnvironment",
-  "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy"
+  "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    { "file": ".gitmessage" },
+    {
+      "text": "Follow Conventional Commits as described in .gitmessage. The first line is `<type>(<scope>): <short summary>`: a type from the list, an optional scope, then a lowercase summary in the imperative mood with no full stop, 72 characters at most. Leave a blank line, then a body that explains why the change was needed and what it does, wrapped at 72 characters. Don't output the placeholder lines or the comment lines from the template."
+    }
+  ]
 }

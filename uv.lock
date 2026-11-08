@@ -454,6 +454,15 @@ wheels = [
 ]
 
 [[package]]
+name = "conventional-pre-commit"
+version = "4.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/88/10e8daae487e373b44cf71cf95b333f2d0c8c7c5cfe79a4d95ad0117ee2e/conventional_pre_commit-4.5.0.tar.gz", hash = "sha256:cf7b018d435c3f47ea8b1e42c52169ad88fdde726603f0bf0e1bef7d27d8fd48", size = 27938, upload-time = "2026-10-29T19:35:58.129Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/db/c2cd84922c53f220249a50507bd134f13a4aa34465d21277c1e669f26c70/conventional_pre_commit-4.5.0-py3-none-any.whl", hash = "sha256:f4696da7be7998dff6b7fe33a7ff4d2e87fed18bd77967e26346628d99ed8f29", size = 16904, upload-time = "2026-10-29T19:35:56.871Z" },
+]
+
+[[package]]
 name = "deep-translator"
 version = "1.11.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1926,6 +1935,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "bandit" },
+    { name = "conventional-pre-commit" },
     { name = "grpc-stubs" },
     { name = "grpcio-tools" },
     { name = "httpx2" },
@@ -1950,6 +1960,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "bandit", extras = ["toml"], specifier = ">=1.9.4" },
+    { name = "conventional-pre-commit", specifier = ">=4.5.0" },
     { name = "grpc-stubs", specifier = ">=1.53.0.6" },
     { name = "grpcio-tools", specifier = ">=1.84.0" },
     { name = "httpx2", specifier = ">=2.13.1" },
