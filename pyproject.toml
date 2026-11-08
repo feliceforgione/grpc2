@@ -28,6 +28,7 @@ web-api-server = { workspace = true }
 
 [dependency-groups]
 dev = [
+    "bandit[toml]>=1.9.4",
     "grpc-stubs>=1.53.0.6",
     "grpcio-tools>=1.84.0",
     "httpx2>=2.13.1",
@@ -89,6 +90,15 @@ cmd = "ruff format"
 [tool.poe.tasks.lint]
 help = "Lint the workspace with ruff"
 cmd = "ruff check"
+
+[tool.poe.tasks.security]
+help = "Scan the workspace for security issues with bandit"
+cmd = "bandit -c pyproject.toml -r packages services tools"
+
+# Tests are skipped: they use assert and seeded Random by design. Generated
+# gRPC code isn't ours to fix.
+[tool.bandit]
+exclude_dirs = ["tests", "*_pb2.py", "*_pb2_grpc.py"]
 
 [tool.ruff]
 target-version = "py313"

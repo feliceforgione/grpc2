@@ -53,6 +53,8 @@ jobs:
 
       - run: uv run ruff format --check
 
+      - run: uv run bandit -c pyproject.toml -r packages services tools
+
   website:
     name: Website tests
     runs-on: ubuntu-latest
