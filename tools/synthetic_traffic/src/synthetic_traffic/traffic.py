@@ -153,7 +153,8 @@ def main() -> None:
         parser.error("--min-requests-per-hour must be between 0 and --max-requests-per-hour")
 
     configure_logging(arguments.log_file)
-    random_generator = Random()
+    # Only spreads the request timings out; nothing security-related depends on it.
+    random_generator = Random()  # nosec B311
     request_times = create_request_times(
         arguments.hours,
         arguments.min_requests_per_hour,
