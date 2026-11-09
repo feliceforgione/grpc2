@@ -16,7 +16,7 @@ class DeepTranslatorProvider:
 
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
-        self._language_translators: dict[LanguageName, ChatGptTranslator] = {}
+        self.language_name_to_translator: dict[LanguageName, ChatGptTranslator] = {}
 
     def request_translation(self, text: str, target_language: LanguageName) -> str:
         """Send text to the model for translation and return its answer as is."""
@@ -26,11 +26,11 @@ class DeepTranslatorProvider:
 
     def _get_translator(self, target_language: LanguageName) -> ChatGptTranslator:
         """Build the translator for a target language once and reuse it on later calls."""
-        if target_language not in self._language_translators:
-            self._language_translators[target_language] = ChatGptTranslator(
+        if target_language not in self.language_name_to_translator:
+            self.language_name_to_translator[target_language] = ChatGptTranslator(
                 api_key=self._api_key,
                 source=LanguageName.ENGLISH,
                 target=target_language,
                 model=self.MODEL,
             )
-        return self._language_translators[target_language]
+        return self.language_name_to_translator[target_language]
