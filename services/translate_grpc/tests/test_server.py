@@ -18,43 +18,43 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 
 @pytest.fixture
 async def client(
-    mock_chat_gpt_translator_translate: Mock, translate_grpc_channel: grpc.aio.Channel
+    mock_translation_provider: Mock, translate_grpc_channel: grpc.aio.Channel
 ) -> TranslationStub:
     """Client stub for a server whose translator is mocked.
 
-    Depends on `mock_chat_gpt_translator_translate` so the patch is in place first.
+    Depends on `mock_translation_provider` so the test can set what it returns.
     """
     return TranslationStub(translate_grpc_channel)  # type: ignore[no-untyped-call]
 
 
 async def test_translate_passes_language_name(
-    client: TranslationStub, mock_chat_gpt_translator_translate: Mock
+    client: TranslationStub, mock_translation_provider: Mock
 ) -> None:
-    mock_chat_gpt_translator_translate.return_value = "ciao"
+    mock_translation_provider.request_translation.return_value = "ciao"
     request = TranslateRequest(text="hello", language=LANGUAGE_ITALIAN)
 
     response = await client.Translate(request)
 
     assert response.translated_text == "ciao"
-    mock_chat_gpt_translator_translate.assert_called_once()
+    mock_translation_provider.request_translation.assert_called_once()
 
 
 @pytest.mark.parametrize("language", [LANGUAGE_UNSPECIFIED, 99])
 async def test_missing_or_unknown_language_is_invalid_argument(
-    client: TranslationStub, mock_chat_gpt_translator_translate: Mock, language: Language
+    client: TranslationStub, mock_translation_provider: Mock, language: Language
 ) -> None:
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
         await client.Translate(TranslateRequest(text="ciao", language=language))
 
     assert exc_info.value.code() == grpc.StatusCode.INVALID_ARGUMENT
-    mock_chat_gpt_translator_translate.assert_not_called()
+    mock_translation_provider.request_translation.assert_not_called()
 
 
 async def test_preserves_unicode_text(
-    client: TranslationStub, mock_chat_gpt_translator_translate: Mock
+    client: TranslationStub, mock_translation_provider: Mock
 ) -> None:
     text = "¿Szép?👋"
-    mock_chat_gpt_translator_translate.return_value = text
+    mock_translation_provider.request_translation.return_value = text
 
     response = await client.Translate(TranslateRequest(text=text, language=LANGUAGE_HUNGARIAN))
 
@@ -62,9 +62,9 @@ async def test_preserves_unicode_text(
 
 
 async def test_translator_error_returns_unknown_status(
-    client: TranslationStub, mock_chat_gpt_translator_translate: Mock
+    client: TranslationStub, mock_translation_provider: Mock
 ) -> None:
-    mock_chat_gpt_translator_translate.side_effect = RuntimeError("upstream failure")
+    mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
         await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ENGLISH))
@@ -74,11 +74,11 @@ async def test_translator_error_returns_unknown_status(
 
 async def test_translate_logs_lengths_and_language_but_not_the_text(
     client: TranslationStub,
-    mock_chat_gpt_translator_translate: Mock,
+    mock_translation_provider: Mock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """The user's text and its translation stay out of the logs, which are sent to Loki."""
-    mock_chat_gpt_translator_translate.return_value = "mock translation"
+    mock_translation_provider.request_translation.return_value = "mock translation"
     request = TranslateRequest(text="mock text to translate", language=LANGUAGE_ITALIAN)
 
     with caplog.at_level(logging.INFO):

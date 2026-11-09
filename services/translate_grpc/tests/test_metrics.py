@@ -19,15 +19,15 @@ def get_translation_counts(metrics_by_name: dict[str, Metric]) -> list[NumberDat
 
 
 def test_translation_is_counted_by_target_language(
-    mock_chat_gpt_translator_translate: Mock,
+    mock_translation_provider: Mock,
     get_recorded_metrics_by_name: Callable[[], dict[str, Metric]],
 ) -> None:
     """Each language gets its own count, so the dashboard can compare them."""
-    mock_chat_gpt_translator_translate.return_value = "mock"
+    mock_translation_provider.request_translation.return_value = "mock"
 
-    translate_text(VALID_TEXT, VALID_LANGUAGE)
-    translate_text(VALID_TEXT, VALID_LANGUAGE)
-    translate_text(VALID_TEXT, LanguageName.SPANISH)
+    translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
+    translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
+    translate_text(mock_translation_provider, VALID_TEXT, LanguageName.SPANISH)
 
     translation_counts = get_translation_counts(get_recorded_metrics_by_name())
     counts_by_attributes = {
@@ -41,14 +41,14 @@ def test_translation_is_counted_by_target_language(
 
 
 def test_failed_translation_is_counted_with_its_error_type(
-    mock_chat_gpt_translator_translate: Mock,
+    mock_translation_provider: Mock,
     get_recorded_metrics_by_name: Callable[[], dict[str, Metric]],
 ) -> None:
     """A failed call to the model is counted, with error.type, and the error still raised."""
-    mock_chat_gpt_translator_translate.side_effect = RuntimeError("upstream failure")
+    mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(RuntimeError):
-        translate_text(VALID_TEXT, VALID_LANGUAGE)
+        translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
 
     [translation_count] = get_translation_counts(get_recorded_metrics_by_name())
     assert translation_count.value == 1
