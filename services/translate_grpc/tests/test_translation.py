@@ -1,53 +1,33 @@
-from collections.abc import Iterator
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
-from deep_translator import ChatGptTranslator
 
-from translate_grpc.translation import TRANSLATION_MODEL, _get_translator, translate_text
+from translate_grpc.translation import translate_text
 from utils.language_name import LanguageName
 
-
-@pytest.fixture
-def chatgpt_translate() -> Iterator[Mock]:
-    """Replace ChatGptTranslator.translate (the OpenAI call); tests set its return_value."""
-    with patch.object(ChatGptTranslator, "translate") as mock:
-        yield mock
+VALID_LANGUAGE = LanguageName.ITALIAN
 
 
-def test_translate_text_sends_text_to_translator(chatgpt_translate: Mock) -> None:
-    chatgpt_translate.return_value = "ciao"
+def test_translate_text_sends_text_and_language_to_provider(
+    mock_translation_provider: Mock,
+) -> None:
+    mock_translation_provider.request_translation.return_value = "ciao"
 
-    assert translate_text("hello", LanguageName.ITALIAN) == "ciao"
-    chatgpt_translate.assert_called_once_with(text="hello")
-
-
-def test_translate_text_uses_supported_openai_model() -> None:
-    # Translators are cached per language, so clear the cache to build a new one,
-    # and again afterwards so later tests don't get the mock.
-    _get_translator.cache_clear()
-    try:
-        with patch("translate_grpc.translation.ChatGptTranslator") as mock_chat_gpt_translator:
-            mock_chat_gpt_translator.return_value.translate.return_value = "ciao"
-
-            translate_text("hello", LanguageName.ITALIAN)
-    finally:
-        _get_translator.cache_clear()
-
-    assert mock_chat_gpt_translator.call_args.kwargs["model"] == TRANSLATION_MODEL
+    assert translate_text(mock_translation_provider, "hello", VALID_LANGUAGE) == "ciao"
+    mock_translation_provider.request_translation.assert_called_once_with("hello", VALID_LANGUAGE)
 
 
 @pytest.mark.parametrize(
     ("text", "raw", "expected"),
     [
-        ("hello", ' "ciao"\n', "ciao"),
-        ('"hello"', '"ciao"', '"ciao"'),
-        ("hello", "  ciao  ", "ciao"),
+        ("hello", ' "ciao"\n', "ciao"),  # quotes and whitespace the model added are dropped
+        ('"hello"', '"ciao"', '"ciao"'),  # the input was quoted, so its quotes are kept
+        ("hello", "  ciao  ", "ciao"),  # surrounding whitespace is trimmed
     ],
 )
-def test_translate_text_cleans_translator_output(
-    chatgpt_translate: Mock, text: str, raw: str, expected: str
+def test_translate_text_cleans_provider_output(
+    mock_translation_provider: Mock, text: str, raw: str, expected: str
 ) -> None:
-    chatgpt_translate.return_value = raw
+    mock_translation_provider.request_translation.return_value = raw
 
-    assert translate_text(text, LanguageName.ITALIAN) == expected
+    assert translate_text(mock_translation_provider, text, VALID_LANGUAGE) == expected

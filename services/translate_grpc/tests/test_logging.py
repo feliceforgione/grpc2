@@ -13,14 +13,14 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 
 
 async def test_translate_log_record_joins_the_rpc_span(
-    mock_chat_gpt_translator_translate: Mock,
+    mock_translation_provider: Mock,
     translate_grpc_channel: grpc.aio.Channel,
     caplog: pytest.LogCaptureFixture,
     get_finished_log_records: Callable[[], tuple[ReadableLogRecord, ...]],
     get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     """The servicer's log line carries the RPC's trace and span IDs, so Grafana can link them."""
-    mock_chat_gpt_translator_translate.return_value = "mock translation"
+    mock_translation_provider.request_translation.return_value = "mock translation"
     request = TranslateRequest(text="mock text to translate", language=LANGUAGE_ITALIAN)
 
     with caplog.at_level(logging.INFO):
