@@ -1,7 +1,12 @@
-# Runs the same checks as CI before every commit. Install the hook once with:
+# Runs the same checks as CI before every commit, and checks the commit message
+# follows Conventional Commits. Install both hooks once with:
 #   uv run pre-commit install
 # Each hook runs against the whole workspace (not just staged files), using the
 # tool versions pinned in uv.lock.
+default_install_hook_types: [pre-commit, commit-msg]
+# Hooks without their own `stages` run only before the commit, not again when
+# the message is checked.
+default_stages: [pre-commit]
 repos:
   - repo: local
     hooks:
@@ -46,3 +51,11 @@ repos:
         language: system
         pass_filenames: false
         files: ^services/web_api_server/(src/web_api_server/website/|tests/js/|package(-lock)?\.json$)
+
+      # Rejects messages that don't start with `<type>(<scope>): <summary>`.
+      # The scope is optional and any scope is accepted. See .gitmessage.
+      - id: conventional-commit
+        name: conventional commit message
+        entry: uv run conventional-pre-commit
+        language: system
+        stages: [commit-msg]

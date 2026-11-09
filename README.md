@@ -224,13 +224,25 @@ uv run poe format
 
 ## Pre-commit hook
 
-A [pre-commit](https://pre-commit.com/) hook runs the same checks as CI (`ruff check`, `ruff format --check`, `mypy` and `pytest`) before every commit, and blocks the commit if any of them fail. The hooks live in `.pre-commit-config.yaml`. Install the hook once after cloning:
+A [pre-commit](https://pre-commit.com/) hook runs the same checks as CI (`ruff check`, `ruff format --check`, `mypy` and `pytest`) before every commit, and blocks the commit if any of them fail. A second hook checks the commit message (see [Commit messages](#commit-messages)). The hooks live in `.pre-commit-config.yaml`. Install both once after cloning:
 
 ```bash
 uv run pre-commit install
 ```
 
 To run the checks without committing, use `uv run pre-commit run --all-files`. To skip them for a single commit, use `git commit --no-verify`.
+
+## Commit messages
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <short summary>`, e.g. `fix(web-api): return 404 for unknown languages`. `.gitmessage` is a template that lists the types and scopes. Point git at it once after cloning, and `git commit` will open the editor with it:
+
+```bash
+git config commit.template .gitmessage
+```
+
+The `commit-msg` pre-commit hook rejects a commit whose message doesn't start with a known type, an optional scope in brackets, `: ` and a summary. The scope is optional and any scope is accepted. When a commit is rejected, its message is kept in `.git/COMMIT_EDITMSG`.
+
+PRs are squash-merged, so the PR title becomes the commit message on `main`. The `PR title` workflow (`.github/workflows/pr-title.yml`) checks it follows the same format. Put the issue a PR addresses in its description (`Closes #55`), not its title: GitHub adds the PR number to the title when it merges.
 
 ## Generating gRPC code
 
