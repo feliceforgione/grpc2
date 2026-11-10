@@ -10,11 +10,11 @@ from opentelemetry.instrumentation.grpc import aio_server_interceptor
 from opentelemetry.instrumentation.grpc.filters import health_check, negate
 
 from translate_grpc.deep_translator_provider import DeepTranslatorProvider
-from translate_grpc.health_servicer import add_health_service_to_server
 from translate_grpc.translation_provider import TranslationProvider
 from translate_grpc.translator_servicer import add_translation_service_to_server
 from utils.constants import TRANSLATE_GRPC_SERVER_PORT
 from utils.error_tracking import setup_error_tracking
+from utils.grpc_health import add_health_service_to_server
 from utils.telemetry import setup_telemetry
 
 
