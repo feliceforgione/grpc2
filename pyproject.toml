@@ -9,6 +9,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "character-count-proto",
     "translate-grpc",
     "translate-proto",
     "synthetic-traffic",
@@ -20,6 +21,7 @@ dependencies = [
 members = ["packages/*", "services/*", "tools/*"]
 
 [tool.uv.sources]
+character-count-proto = { workspace = true }
 synthetic-traffic = { workspace = true }
 translate-grpc = { workspace = true }
 translate-proto = { workspace = true }
@@ -43,6 +45,10 @@ dev = [
 ]
 
 [tool.poe.tasks.proto]
+help = "Generate Python gRPC code from protos/ into the translate_proto and character_count_proto packages"
+sequence = ["proto-translate", "proto-character-count"]
+
+[tool.poe.tasks.proto-translate]
 help = "Generate Python gRPC code from protos/ into the translate_proto package"
 cmd = """
 python -m grpc_tools.protoc -I protos
@@ -50,6 +56,16 @@ python -m grpc_tools.protoc -I protos
   --pyi_out=packages/translate_proto/src
   --grpc_python_out=packages/translate_proto/src
   protos/translate_proto/translator.proto
+"""
+
+[tool.poe.tasks.proto-character-count]
+help = "Generate Python gRPC code from protos/ into the character_count_proto package"
+cmd = """
+python -m grpc_tools.protoc -I protos
+  --python_out=packages/character_count_proto/src
+  --pyi_out=packages/character_count_proto/src
+  --grpc_python_out=packages/character_count_proto/src
+  protos/character_count_proto/character_counter.proto
 """
 
 [tool.pytest.ini_options]
@@ -68,6 +84,7 @@ python_version = "3.13"
 strict = true
 files = ["packages", "services", "tools"]
 mypy_path = [
+    "packages/character_count_proto/src",
     "packages/translate_proto/src",
     "packages/utils/src",
     "services/translate_grpc/src",
@@ -77,7 +94,12 @@ mypy_path = [
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
-module = ["translate_proto.translator_pb2", "translate_proto.translator_pb2_grpc"]
+module = [
+    "character_count_proto.character_counter_pb2",
+    "character_count_proto.character_counter_pb2_grpc",
+    "translate_proto.translator_pb2",
+    "translate_proto.translator_pb2_grpc",
+]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
@@ -110,4 +132,11 @@ extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py", "*.md"]
 select = ["E", "F", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["synthetic_traffic", "translate_grpc", "translate_proto", "utils", "web_api_server"]
+known-first-party = [
+    "character_count_proto",
+    "synthetic_traffic",
+    "translate_grpc",
+    "translate_proto",
+    "utils",
+    "web_api_server",
+]
