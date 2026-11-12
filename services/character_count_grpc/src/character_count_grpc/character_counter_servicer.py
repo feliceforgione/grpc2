@@ -22,7 +22,7 @@ class CharacterCounter(CharacterCounterServicer):
     ) -> CountCharactersResponse:
         # len() counts Unicode code points, so "é" and "👋" each count as one character.
         character_count = len(request.text_to_count)
-        # Logs the count rather than the text, which is the user's.
+        # Logs the count rather than the text.
         logging.info("Counted %d characters", character_count)
         return CountCharactersResponse(character_count=character_count)
 

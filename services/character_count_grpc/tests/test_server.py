@@ -8,8 +8,6 @@ from opentelemetry.trace import SpanKind
 from character_count_proto.character_counter_pb2 import CountCharactersRequest
 from character_count_proto.character_counter_pb2_grpc import CharacterCounterStub
 
-VALID_TEXT = "hello"
-
 
 @pytest.mark.parametrize(
     ("text_to_count", "expected_character_count"),
@@ -32,19 +30,20 @@ async def test_count_characters_logs_the_count_but_not_the_text(
     client: CharacterCounterStub, caplog: pytest.LogCaptureFixture
 ) -> None:
     """The user's text stays out of the logs, which are sent to Loki."""
+    valid_text = "hello"
     with caplog.at_level(logging.INFO):
-        await client.CountCharacters(CountCharactersRequest(text_to_count=VALID_TEXT))
+        await client.CountCharacters(CountCharactersRequest(text_to_count=valid_text))
 
     [log_message] = [record.getMessage() for record in caplog.records]
     assert log_message == "Counted 5 characters"
-    assert VALID_TEXT not in caplog.text
+    assert valid_text not in caplog.text
 
 
 async def test_count_characters_records_a_server_span(
     client: CharacterCounterStub,
     get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
-    await client.CountCharacters(CountCharactersRequest(text_to_count=VALID_TEXT))
+    await client.CountCharacters(CountCharactersRequest(text_to_count="mock text"))
 
     server_span = get_finished_spans_by_kind()[SpanKind.SERVER]
     assert server_span.name == "/character_count.v1.CharacterCounter/CountCharacters"
