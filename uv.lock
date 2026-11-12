@@ -2081,6 +2081,8 @@ name = "utils"
 version = "0.1.0"
 source = { editable = "packages/utils" }
 dependencies = [
+    { name = "grpcio" },
+    { name = "grpcio-health-checking" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
@@ -2092,6 +2094,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "grpcio", specifier = ">=1.84.0" },
+    { name = "grpcio-health-checking", specifier = ">=1.84.0" },
     { name = "opentelemetry-api", specifier = ">=1.45.1" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.45.1" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.45.1" },
