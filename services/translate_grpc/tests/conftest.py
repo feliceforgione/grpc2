@@ -5,9 +5,10 @@ import grpc
 import grpc.aio
 import pytest
 
-from translate_grpc.server import add_services_to_server, create_grpc_server
+from translate_grpc.server import add_services_to_server
 from translate_grpc.translation_provider import TranslationProvider
 from utils.constants import LOOPBACK_IPV4
+from utils.grpc_server import create_grpc_server
 
 
 @pytest.fixture
