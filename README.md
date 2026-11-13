@@ -61,28 +61,29 @@ curl http://127.0.0.1:8000/health
 
 ### Running with Docker
 
-Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared `translate_proto` and `utils` packages, and the libraries that service depends on. `compose.yaml` is also what Coolify deploys, so it doesn't publish any port; Coolify pulls the images CI pushes to GHCR rather than building them, so `compose.yaml` has no `build:` keys either. `compose.local.yaml` adds those and the port for running on your machine. With your `.env` file in place, run from the project root:
+Each service has its own image, built from the Dockerfile in its folder, and `compose.yaml` runs them together. An image contains only its service, the shared packages it uses (its proto package and `utils`), and the libraries that service depends on. `compose.yaml` is also what Coolify deploys, so it doesn't publish any port; Coolify pulls the images CI pushes to GHCR rather than building them, so `compose.yaml` has no `build:` keys either. `compose.local.yaml` adds those and the port for running on your machine. With your `.env` file in place, run from the project root:
 
 ```bash
 docker compose -f compose.yaml -f compose.local.yaml up --build
 ```
 
-The API is published at http://127.0.0.1:8000/. The gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). Stop everything with `docker compose down`.
+The API is published at http://127.0.0.1:8000/. The translate gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). The character count gRPC server is reachable by any service at `character-count-grpc:50052` on the compose network (or on `CHARACTER_COUNT_GRPC_SERVER_PORT`, when set in `.env`); `compose.local.yaml` also publishes it on `127.0.0.1:50052`, so you can call it from your machine. Stop everything with `docker compose down`.
 
 #### Health checks
 
 Every container has a Docker health check, so Docker and Coolify can tell a hung or crashed server from a healthy one. Coolify combines them into the app's status. Each runs a command inside its container:
 
-| Service          | Command                                        | What it checks                                              |
-| ---------------- | ---------------------------------------------- | ----------------------------------------------------------- |
-| `translate-grpc` | `translate-grpc-healthcheck`                   | The standard gRPC health service reports `SERVING`          |
-| `web-api-server` | `curl --fail http://127.0.0.1:8000/health`     | `GET /health` answers 200 (it doesn't call the gRPC server) |
-| `prometheus`     | `wget http://127.0.0.1:9090/-/ready`           | Prometheus is ready to serve queries                        |
-| `tempo`          | `/tempo -health`                               | Tempo's `/ready` endpoint answers 200                       |
-| `loki`           | `busybox wget http://127.0.0.1:3100/ready`     | Loki is ready to receive logs and serve queries             |
-| `grafana`        | `curl --fail http://127.0.0.1:3300/api/health` | Grafana and its database are up                             |
+| Service                | Command                                        | What it checks                                              |
+| ---------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| `translate-grpc`       | `translate-grpc-healthcheck`                   | The standard gRPC health service reports `SERVING`          |
+| `character-count-grpc` | `character-count-grpc-healthcheck`             | The standard gRPC health service reports `SERVING`          |
+| `web-api-server`       | `curl --fail http://127.0.0.1:8000/health`     | `GET /health` answers 200 (it doesn't call the gRPC server) |
+| `prometheus`           | `wget http://127.0.0.1:9090/-/ready`           | Prometheus is ready to serve queries                        |
+| `tempo`                | `/tempo -health`                               | Tempo's `/ready` endpoint answers 200                       |
+| `loki`                 | `busybox wget http://127.0.0.1:3100/ready`     | Loki is ready to receive logs and serve queries             |
+| `grafana`              | `curl --fail http://127.0.0.1:3300/api/health` | Grafana and its database are up                             |
 
-curl can't speak the gRPC health protocol, so the gRPC server uses a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too. Tempo's image has no shell or curl, so it uses Tempo's built-in check. Loki's image has neither, and Loki has no built-in check, so its Dockerfile copies in a static busybox for the check's `wget`.
+curl can't speak the gRPC health protocol, so the gRPC servers use a Python command instead. The web API server's check calls port 8000, so if you change `WEB_API_SERVER_PORT`, change the port in its `healthcheck` in `compose.yaml` too. Tempo's image has no shell or curl, so it uses Tempo's built-in check. Loki's image has neither, and Loki has no built-in check, so its Dockerfile copies in a static busybox for the check's `wget`.
 
 No check sends a request to OpenAI. Docker runs them every 30s, and every 2s during the first 15s after a container starts. A container turns `unhealthy` after 3 failures in a row, and a check that takes longer than 5s counts as a failure. `web-api-server` only starts once `translate-grpc` is healthy. Check the status with:
 

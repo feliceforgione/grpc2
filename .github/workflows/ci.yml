@@ -96,6 +96,12 @@ jobs:
               - pyproject.toml
               - uv.lock
               - .dockerignore
+            character-count-grpc:
+              - services/character_count_grpc/**
+              - packages/**
+              - pyproject.toml
+              - uv.lock
+              - .dockerignore
             web-api-server:
               - services/web_api_server/**
               - packages/**
@@ -131,6 +137,7 @@ jobs:
       BUILDS: >-
         {
           "translate-grpc": {"context": ".", "file": "services/translate_grpc/Dockerfile"},
+          "character-count-grpc": {"context": ".", "file": "services/character_count_grpc/Dockerfile"},
           "web-api-server": {"context": ".", "file": "services/web_api_server/Dockerfile"},
           "prometheus": {"context": "monitoring/prometheus", "file": "monitoring/prometheus/Dockerfile"},
           "tempo": {"context": "monitoring/tempo", "file": "monitoring/tempo/Dockerfile"},
