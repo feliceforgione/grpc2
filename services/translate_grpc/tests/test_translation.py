@@ -11,10 +11,16 @@ VALID_LANGUAGE = LanguageName.ITALIAN
 def test_translate_text_sends_text_and_language_to_provider(
     mock_translation_provider: Mock,
 ) -> None:
-    mock_translation_provider.request_translation.return_value = "ciao"
+    mock_translation_provider.request_translation.return_value = "mock translation"
 
-    assert translate_text(mock_translation_provider, "hello", VALID_LANGUAGE) == "ciao"
-    mock_translation_provider.request_translation.assert_called_once_with("hello", VALID_LANGUAGE)
+    mock_text = "mock text"
+    assert (
+        translate_text(
+            mock_translation_provider, mock_text, VALID_LANGUAGE, text_length=len(mock_text)
+        )
+        == "mock translation"
+    )
+    mock_translation_provider.request_translation.assert_called_once_with(mock_text, VALID_LANGUAGE)
 
 
 @pytest.mark.parametrize(
@@ -30,4 +36,7 @@ def test_translate_text_cleans_provider_output(
 ) -> None:
     mock_translation_provider.request_translation.return_value = raw
 
-    assert translate_text(mock_translation_provider, text, VALID_LANGUAGE) == expected
+    assert (
+        translate_text(mock_translation_provider, text, VALID_LANGUAGE, text_length=len(text))
+        == expected
+    )

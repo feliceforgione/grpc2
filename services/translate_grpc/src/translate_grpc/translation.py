@@ -28,22 +28,33 @@ def translate_text(
     translation_provider: TranslationProvider,
     text: str,
     target_language: LanguageName = LanguageName.ENGLISH,
+    *,
+    text_length: int,
 ) -> str:
-    """Translate text into the target language with the given provider."""
+    """Translate text into the target language with the given provider.
+
+    text_length is the text's character count, from the character count service.
+    """
     with count_translation(target_language):
-        translation = _request_translation(translation_provider, text, target_language)
+        translation = _request_translation(translation_provider, text, target_language, text_length)
     return strip_added_quotes(text, translation)
 
 
 def _request_translation(
-    translation_provider: TranslationProvider, text: str, target_language: LanguageName
+    translation_provider: TranslationProvider,
+    text: str,
+    target_language: LanguageName,
+    text_length: int,
 ) -> str:
     """Ask the provider for a translation inside a span, and return its answer as is."""
     # The provider calls aren't traced by an instrumentation library (deep_translator uses
     # the pre-1.0 openai package, which OpenTelemetry's OpenAI instrumentation doesn't
     # support), so the call is traced by hand.
     with trace_translation(
-        translation_provider.PROVIDER_NAME, translation_provider.MODEL, text, target_language
+        translation_provider.PROVIDER_NAME,
+        translation_provider.MODEL,
+        text_length,
+        target_language,
     ) as trace:
         translation = translation_provider.request_translation(text, target_language)
         trace.record_answer(translation)
