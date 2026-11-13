@@ -2018,6 +2018,7 @@ name = "translate-grpc"
 version = "0.1.0"
 source = { editable = "services/translate_grpc" }
 dependencies = [
+    { name = "character-count-proto" },
     { name = "deep-translator", extra = ["ai"] },
     { name = "googletrans" },
     { name = "grpcio" },
@@ -2030,6 +2031,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "character-count-proto", editable = "packages/character_count_proto" },
     { name = "deep-translator", extras = ["ai"], specifier = ">=1.11.4" },
     { name = "googletrans", specifier = ">=4.0.2" },
     { name = "grpcio", specifier = ">=1.84.0" },

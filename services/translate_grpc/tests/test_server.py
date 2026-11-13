@@ -4,7 +4,12 @@ from unittest.mock import Mock
 import grpc
 import grpc.aio
 import pytest
+from grpc.aio import AioRpcError
 
+from character_count_proto.character_counter_pb2 import (
+    CountCharactersRequest,
+    CountCharactersResponse,
+)
 from translate_proto.translator_pb2 import (
     LANGUAGE_ENGLISH,
     LANGUAGE_HUNGARIAN,
@@ -72,12 +77,56 @@ async def test_translator_error_returns_unknown_status(
     assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
 
 
+async def test_translate_counts_the_text_with_the_character_count_service(
+    client: TranslationStub,
+    mock_translation_provider: Mock,
+    mock_character_count_grpc_client: Mock,
+) -> None:
+    mock_translation_provider.request_translation.return_value = "ciao"
+
+    await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ITALIAN))
+
+    mock_character_count_grpc_client.CountCharacters.assert_awaited_once()
+    [count_characters_request] = mock_character_count_grpc_client.CountCharacters.await_args.args
+    assert count_characters_request == CountCharactersRequest(text_to_count="hello")
+
+
+@pytest.mark.parametrize(
+    "status_code",
+    [
+        grpc.StatusCode.INVALID_ARGUMENT,  # the text is over the character limit
+        grpc.StatusCode.UNAVAILABLE,  # the character count server is down
+    ],
+)
+async def test_failed_count_ends_the_rpc_with_its_status_before_translating(
+    client: TranslationStub,
+    mock_translation_provider: Mock,
+    mock_character_count_grpc_client: Mock,
+    status_code: grpc.StatusCode,
+) -> None:
+    """The caller gets the count's status and details, and the model is never called."""
+    mock_character_count_grpc_client.CountCharacters.side_effect = AioRpcError(
+        status_code, Mock(), Mock(), details="mock count failure", debug_error_string=None
+    )
+
+    with pytest.raises(AioRpcError) as exc_info:
+        await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ITALIAN))
+
+    assert exc_info.value.code() == status_code
+    assert exc_info.value.details() == "mock count failure"
+    mock_translation_provider.request_translation.assert_not_called()
+
+
 async def test_translate_logs_lengths_and_language_but_not_the_text(
     client: TranslationStub,
     mock_translation_provider: Mock,
+    mock_character_count_grpc_client: Mock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """The user's text and its translation stay out of the logs, which are sent to Loki."""
+    mock_character_count_grpc_client.CountCharacters.return_value = CountCharactersResponse(
+        character_count=22
+    )
     mock_translation_provider.request_translation.return_value = "mock translation"
     request = TranslateRequest(text="mock text to translate", language=LANGUAGE_ITALIAN)
 

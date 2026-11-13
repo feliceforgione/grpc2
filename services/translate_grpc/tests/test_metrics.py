@@ -9,6 +9,7 @@ from utils.language_name import LanguageName
 
 TRANSLATIONS_METRIC_NAME = "translations"
 VALID_TEXT = "hello"
+VALID_TEXT_LENGTH = 5
 VALID_LANGUAGE = LanguageName.ITALIAN
 
 
@@ -25,9 +26,15 @@ def test_translation_is_counted_by_target_language(
     """Each language gets its own count, so the dashboard can compare them."""
     mock_translation_provider.request_translation.return_value = "mock"
 
-    translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
-    translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
-    translate_text(mock_translation_provider, VALID_TEXT, LanguageName.SPANISH)
+    translate_text(
+        mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
+    )
+    translate_text(
+        mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
+    )
+    translate_text(
+        mock_translation_provider, VALID_TEXT, LanguageName.SPANISH, text_length=VALID_TEXT_LENGTH
+    )
 
     translation_counts = get_translation_counts(get_recorded_metrics_by_name())
     counts_by_attributes = {
@@ -48,7 +55,9 @@ def test_failed_translation_is_counted_with_its_error_type(
     mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(RuntimeError):
-        translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
+        translate_text(
+            mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
+        )
 
     [translation_count] = get_translation_counts(get_recorded_metrics_by_name())
     assert translation_count.value == 1
