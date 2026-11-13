@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "gRPC server that translates text with ChatGPT"
 requires-python = ">=3.13"
 dependencies = [
+    "character-count-proto",
     "deep-translator[ai]>=1.11.4",
     "googletrans>=4.0.2",
     "grpcio>=1.84.0",
@@ -19,6 +20,7 @@ translate-grpc = "translate_grpc.server:main"
 translate-grpc-healthcheck = "translate_grpc.healthcheck:main"
 
 [tool.uv.sources]
+character-count-proto = { workspace = true }
 translate-proto = { workspace = true }
 utils = { workspace = true }
 

@@ -14,6 +14,7 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.language_name import LanguageName
 
 VALID_TEXT = "hello"
+VALID_TEXT_LENGTH = 5
 VALID_LANGUAGE = LanguageName.ITALIAN
 VALID_TRANSLATE_REQUEST = TranslateRequest(text=VALID_TEXT, language=LANGUAGE_ITALIAN)
 
@@ -91,7 +92,9 @@ def test_openai_span_records_model_language_and_text_lengths(
     """The span uses the GenAI semantic conventions' names, and never records the text itself."""
     mock_translation_provider.request_translation.return_value = ' "mock"\n'
 
-    translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
+    translate_text(
+        mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
+    )
 
     [span] = get_finished_spans()
     assert span.name == f"chat {mock_translation_provider.MODEL}"
@@ -101,7 +104,7 @@ def test_openai_span_records_model_language_and_text_lengths(
         "gen_ai.provider.name": mock_translation_provider.PROVIDER_NAME,
         "gen_ai.request.model": mock_translation_provider.MODEL,
         "translation.target_language": VALID_LANGUAGE,
-        "translation.text_length": len(VALID_TEXT),
+        "translation.text_length": VALID_TEXT_LENGTH,
         # Measured before strip_added_quotes, so it is the length the provider sent back.
         "translation.answer_length": len(' "mock"\n'),
     }
@@ -114,7 +117,9 @@ def test_openai_span_records_failed_call_as_error(
     mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(RuntimeError):
-        translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
+        translate_text(
+            mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
+        )
 
     [span] = get_finished_spans()
     assert span.status.status_code == StatusCode.ERROR

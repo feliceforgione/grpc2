@@ -7,32 +7,48 @@ import os
 import grpc.aio
 from dotenv import load_dotenv
 
+from character_count_proto.character_counter_pb2_grpc import CharacterCounterStub
 from translate_grpc.deep_translator_provider import DeepTranslatorProvider
 from translate_grpc.translation_provider import TranslationProvider
 from translate_grpc.translator_servicer import add_translation_service_to_server
-from utils.constants import TRANSLATE_GRPC_SERVER_PORT
+from utils.constants import (
+    CHARACTER_COUNT_GRPC_SERVER_PORT,
+    LOOPBACK_IPV4,
+    TRANSLATE_GRPC_SERVER_PORT,
+)
 from utils.error_tracking import setup_error_tracking
+from utils.grpc_channel import open_grpc_channel
 from utils.grpc_health import add_health_service_to_server
 from utils.grpc_server import create_grpc_server
 from utils.telemetry import setup_telemetry
 
+CHARACTER_COUNT_GRPC_SERVER_ADDRESS = os.environ.get(
+    "CHARACTER_COUNT_GRPC_SERVER_ADDRESS", f"{LOOPBACK_IPV4}:{CHARACTER_COUNT_GRPC_SERVER_PORT}"
+)
+
 
 async def add_services_to_server(
-    server: grpc.aio.Server, translation_provider: TranslationProvider
+    server: grpc.aio.Server,
+    translation_provider: TranslationProvider,
+    character_count_grpc_client: CharacterCounterStub,
 ) -> None:
     """Add the Translation service and the standard gRPC health service to the server."""
-    add_translation_service_to_server(server, translation_provider)
+    add_translation_service_to_server(server, translation_provider, character_count_grpc_client)
     await add_health_service_to_server(server)
 
 
 async def serve(translation_provider: TranslationProvider) -> None:
-    server = create_grpc_server()
-    await add_services_to_server(server, translation_provider)
-    listen_addr = f"[::]:{TRANSLATE_GRPC_SERVER_PORT}"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    await server.start()
-    await server.wait_for_termination()
+    # One channel to the character count server, open for the server's lifetime and shared
+    # by every RPC.
+    async with open_grpc_channel(CHARACTER_COUNT_GRPC_SERVER_ADDRESS) as character_count_channel:
+        character_count_grpc_client = CharacterCounterStub(character_count_channel)  # type: ignore[no-untyped-call]
+        server = create_grpc_server()
+        await add_services_to_server(server, translation_provider, character_count_grpc_client)
+        listen_addr = f"[::]:{TRANSLATE_GRPC_SERVER_PORT}"
+        server.add_insecure_port(listen_addr)
+        logging.info("Starting server on %s", listen_addr)
+        await server.start()
+        await server.wait_for_termination()
 
 
 def main() -> None:

@@ -13,7 +13,9 @@ def test_translate_text_sends_text_and_language_to_provider(
 ) -> None:
     mock_translation_provider.request_translation.return_value = "ciao"
 
-    assert translate_text(mock_translation_provider, "hello", VALID_LANGUAGE) == "ciao"
+    assert (
+        translate_text(mock_translation_provider, "hello", VALID_LANGUAGE, text_length=5) == "ciao"
+    )
     mock_translation_provider.request_translation.assert_called_once_with("hello", VALID_LANGUAGE)
 
 
@@ -30,4 +32,7 @@ def test_translate_text_cleans_provider_output(
 ) -> None:
     mock_translation_provider.request_translation.return_value = raw
 
-    assert translate_text(mock_translation_provider, text, VALID_LANGUAGE) == expected
+    assert (
+        translate_text(mock_translation_provider, text, VALID_LANGUAGE, text_length=len(text))
+        == expected
+    )

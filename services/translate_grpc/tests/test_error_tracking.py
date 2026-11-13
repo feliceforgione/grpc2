@@ -8,6 +8,7 @@ from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.trace import SpanKind, format_span_id, format_trace_id
 from sentry_sdk.types import Event
 
+from character_count_proto.character_counter_pb2 import CountCharactersResponse
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 
@@ -16,12 +17,16 @@ TEXT_TO_TRANSLATE = "mock text to translate"
 
 async def test_failed_translation_sends_one_sentry_event_tagged_with_its_trace(
     mock_translation_provider: Mock,
+    mock_character_count_grpc_client: Mock,
     translate_grpc_channel: grpc.aio.Channel,
     get_sentry_events: Callable[[], list[Event]],
     get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
 ) -> None:
     """The servicer logs the failure inside the RPC's span, and gRPC's own later log of the same
     exception is dropped as a duplicate, so Sentry gets one event it can link to the trace."""
+    mock_character_count_grpc_client.CountCharacters.return_value = CountCharactersResponse(
+        character_count=22
+    )
     mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
     request = TranslateRequest(text=TEXT_TO_TRANSLATE, language=LANGUAGE_ITALIAN)
 
