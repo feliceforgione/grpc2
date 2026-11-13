@@ -26,8 +26,9 @@ class CharacterCounter(CharacterCounterServicer):
     ) -> CountCharactersResponse:
         # len() counts Unicode code points, so "é" and "👋" each count as one character.
         character_count = len(request.text_to_count)
-        if character_count > MAX_CHARACTER_COUNT:
-            record_text_length(character_count, is_over_limit=True)
+        is_over_limit = character_count > MAX_CHARACTER_COUNT
+        record_text_length(character_count, is_over_limit)
+        if is_over_limit:
             # A warning rather than an error, since it's the caller's mistake and records at
             # ERROR and above also go to Sentry. Logs the length rather than the text.
             logging.warning(
@@ -40,7 +41,6 @@ class CharacterCounter(CharacterCounterServicer):
                 StatusCode.INVALID_ARGUMENT,
                 f"Text has {character_count} characters; the maximum is {MAX_CHARACTER_COUNT}",
             )
-        record_text_length(character_count)
         # Logs the count rather than the text.
         logging.info("Counted %d characters", character_count)
         return CountCharactersResponse(character_count=character_count)

@@ -4,7 +4,6 @@ import pytest
 from grpc.aio import AioRpcError
 from opentelemetry.sdk.metrics.export import HistogramDataPoint, Metric
 
-from character_count_grpc.character_count_metrics import TEXT_TOO_LONG_ERROR_TYPE
 from character_count_grpc.character_counter_servicer import MAX_CHARACTER_COUNT
 from character_count_proto.character_counter_pb2 import CountCharactersRequest
 from character_count_proto.character_counter_pb2_grpc import CharacterCounterStub
@@ -28,23 +27,23 @@ async def test_counted_text_length_is_recorded(
     await client.CountCharacters(CountCharactersRequest(text_to_count="hello world"))
 
     [text_length] = get_text_lengths(get_recorded_metrics_by_name())
-    assert text_length.attributes == {}
+    assert text_length.attributes == {"is_over_limit": False}
     assert text_length.count == 2
     assert text_length.sum == 16
     assert text_length.min == 5
     assert text_length.max == 11
 
 
-async def test_rejected_text_length_is_recorded_with_its_error_type(
+async def test_rejected_text_length_is_recorded_as_over_limit(
     client: CharacterCounterStub,
     get_recorded_metrics_by_name: Callable[[], dict[str, Metric]],
 ) -> None:
-    """A text over the limit is recorded with error.type, and the request still rejected."""
+    """A text over the limit is recorded with is_over_limit, and the request still rejected."""
     text_over_the_limit = "a" * (MAX_CHARACTER_COUNT + 1)
     with pytest.raises(AioRpcError):
         await client.CountCharacters(CountCharactersRequest(text_to_count=text_over_the_limit))
 
     [text_length] = get_text_lengths(get_recorded_metrics_by_name())
-    assert text_length.attributes == {"error.type": TEXT_TOO_LONG_ERROR_TYPE}
+    assert text_length.attributes == {"is_over_limit": True}
     assert text_length.count == 1
     assert text_length.sum == MAX_CHARACTER_COUNT + 1
