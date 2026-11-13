@@ -2,9 +2,12 @@ import logging
 from collections.abc import Callable
 
 import pytest
+from grpc import StatusCode
+from grpc.aio import AioRpcError
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.trace import SpanKind
 
+from character_count_grpc.character_counter_servicer import MAX_CHARACTER_COUNT
 from character_count_proto.character_counter_pb2 import CountCharactersRequest
 from character_count_proto.character_counter_pb2_grpc import CharacterCounterStub
 
@@ -16,6 +19,8 @@ from character_count_proto.character_counter_pb2_grpc import CharacterCounterStu
         ("hello world", 11),  # spaces count as characters
         ("", 0),  # an empty text has no characters
         ("¿Szép?👋", 7),  # each Unicode code point counts once, not each UTF-8 byte
+        ("a" * MAX_CHARACTER_COUNT, MAX_CHARACTER_COUNT),  # the limit itself is allowed
+        ("👋" * MAX_CHARACTER_COUNT, MAX_CHARACTER_COUNT),  # limit is in code points, not bytes
     ],
 )
 async def test_count_characters_returns_the_number_of_characters(
@@ -24,6 +29,17 @@ async def test_count_characters_returns_the_number_of_characters(
     response = await client.CountCharacters(CountCharactersRequest(text_to_count=text_to_count))
 
     assert response.character_count == expected_character_count
+
+
+async def test_count_characters_rejects_text_over_the_limit(client: CharacterCounterStub) -> None:
+    text_over_the_limit = "a" * (MAX_CHARACTER_COUNT + 1)
+    with pytest.raises(AioRpcError) as error_info:
+        await client.CountCharacters(CountCharactersRequest(text_to_count=text_over_the_limit))
+
+    assert error_info.value.code() == StatusCode.INVALID_ARGUMENT
+    assert error_info.value.details() == (
+        f"Text has {MAX_CHARACTER_COUNT + 1} characters; the maximum is {MAX_CHARACTER_COUNT}"
+    )
 
 
 async def test_count_characters_logs_the_count_but_not_the_text(

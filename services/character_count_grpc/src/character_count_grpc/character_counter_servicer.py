@@ -2,6 +2,7 @@
 
 import logging
 
+from grpc import StatusCode
 from grpc.aio import Server, ServicerContext
 
 from character_count_proto.character_counter_pb2 import (
@@ -13,6 +14,8 @@ from character_count_proto.character_counter_pb2_grpc import (
     add_CharacterCounterServicer_to_server,
 )
 
+MAX_CHARACTER_COUNT = 15
+
 
 class CharacterCounter(CharacterCounterServicer):
     async def CountCharacters(
@@ -22,6 +25,12 @@ class CharacterCounter(CharacterCounterServicer):
     ) -> CountCharactersResponse:
         # len() counts Unicode code points, so "é" and "👋" each count as one character.
         character_count = len(request.text_to_count)
+        if character_count > MAX_CHARACTER_COUNT:
+            # abort() raises, so the RPC ends here with an INVALID_ARGUMENT status.
+            await context.abort(
+                StatusCode.INVALID_ARGUMENT,
+                f"Text has {character_count} characters; the maximum is {MAX_CHARACTER_COUNT}",
+            )
         # Logs the count rather than the text.
         logging.info("Counted %d characters", character_count)
         return CountCharactersResponse(character_count=character_count)
