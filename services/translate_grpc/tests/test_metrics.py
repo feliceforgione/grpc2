@@ -9,7 +9,7 @@ from utils.language_name import LanguageName
 
 TRANSLATIONS_METRIC_NAME = "translations"
 VALID_TEXT = "hello"
-VALID_TEXT_LENGTH = 5
+VALID_TEXT_LENGTH = len(VALID_TEXT)
 VALID_LANGUAGE = LanguageName.ITALIAN
 
 

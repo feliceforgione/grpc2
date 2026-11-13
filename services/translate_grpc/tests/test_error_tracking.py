@@ -25,7 +25,7 @@ async def test_failed_translation_sends_one_sentry_event_tagged_with_its_trace(
     """The servicer logs the failure inside the RPC's span, and gRPC's own later log of the same
     exception is dropped as a duplicate, so Sentry gets one event it can link to the trace."""
     mock_character_count_grpc_client.CountCharacters.return_value = CountCharactersResponse(
-        character_count=22
+        character_count=len(TEXT_TO_TRANSLATE)
     )
     mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
     request = TranslateRequest(text=TEXT_TO_TRANSLATE, language=LANGUAGE_ITALIAN)

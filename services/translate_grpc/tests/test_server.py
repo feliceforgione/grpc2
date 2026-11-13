@@ -77,18 +77,20 @@ async def test_translator_error_returns_unknown_status(
     assert exc_info.value.code() == grpc.StatusCode.UNKNOWN
 
 
-async def test_translate_counts_the_text_with_the_character_count_service(
+async def test_translate_counts_the_text_using_the_character_count_service(
     client: TranslationStub,
     mock_translation_provider: Mock,
     mock_character_count_grpc_client: Mock,
 ) -> None:
-    mock_translation_provider.request_translation.return_value = "ciao"
+    mock_translation_provider.request_translation.return_value = "mock translation"
 
-    await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ITALIAN))
+    mock_text = "mock text"
+
+    await client.Translate(TranslateRequest(text=mock_text, language=LANGUAGE_ITALIAN))
 
     mock_character_count_grpc_client.CountCharacters.assert_awaited_once()
     [count_characters_request] = mock_character_count_grpc_client.CountCharacters.await_args.args
-    assert count_characters_request == CountCharactersRequest(text_to_count="hello")
+    assert count_characters_request == CountCharactersRequest(text_to_count=mock_text)
 
 
 @pytest.mark.parametrize(
@@ -110,7 +112,7 @@ async def test_failed_count_ends_the_rpc_with_its_status_before_translating(
     )
 
     with pytest.raises(AioRpcError) as exc_info:
-        await client.Translate(TranslateRequest(text="hello", language=LANGUAGE_ITALIAN))
+        await client.Translate(TranslateRequest(text="mock text", language=LANGUAGE_ITALIAN))
 
     assert exc_info.value.code() == status_code
     assert exc_info.value.details() == "mock count failure"
@@ -124,16 +126,21 @@ async def test_translate_logs_lengths_and_language_but_not_the_text(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """The user's text and its translation stay out of the logs, which are sent to Loki."""
+    text_to_translate = "mock text to translate"
+    translated_text = "mock translation"
     mock_character_count_grpc_client.CountCharacters.return_value = CountCharactersResponse(
-        character_count=22
+        character_count=len(text_to_translate)
     )
-    mock_translation_provider.request_translation.return_value = "mock translation"
-    request = TranslateRequest(text="mock text to translate", language=LANGUAGE_ITALIAN)
+    mock_translation_provider.request_translation.return_value = translated_text
+    request = TranslateRequest(text=text_to_translate, language=LANGUAGE_ITALIAN)
 
     with caplog.at_level(logging.INFO):
         await client.Translate(request)
 
     [log_message] = [record.getMessage() for record in caplog.records]
-    assert log_message == "Translated 22 characters to italian, in 16 characters"
-    assert "mock text to translate" not in caplog.text
-    assert "mock translation" not in caplog.text
+    assert log_message == (
+        f"Translated {len(text_to_translate)} characters to italian, "
+        f"in {len(translated_text)} characters"
+    )
+    assert text_to_translate not in caplog.text
+    assert translated_text not in caplog.text
