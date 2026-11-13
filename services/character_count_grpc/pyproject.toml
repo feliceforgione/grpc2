@@ -1,0 +1,23 @@
+[project]
+name = "character-count-grpc"
+version = "0.1.0"
+description = "gRPC server that counts the characters in a text"
+requires-python = ">=3.13"
+dependencies = [
+    "character-count-proto",
+    "grpcio>=1.84.0",
+    "python-dotenv>=1.1.0",
+    "utils",
+]
+
+[project.scripts]
+character-count-grpc = "character_count_grpc.server:main"
+character-count-grpc-healthcheck = "character_count_grpc.healthcheck:main"
+
+[tool.uv.sources]
+character-count-proto = { workspace = true }
+utils = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
