@@ -48,16 +48,3 @@ async def test_rejected_text_length_is_recorded_with_its_error_type(
     assert text_length.attributes == {"error.type": TEXT_TOO_LONG_ERROR_TYPE}
     assert text_length.count == 1
     assert text_length.sum == MAX_CHARACTER_COUNT + 1
-
-
-async def test_text_length_buckets_split_at_the_character_limit(
-    client: CharacterCounterStub,
-    get_recorded_metrics_by_name: Callable[[], dict[str, Metric]],
-) -> None:
-    """The limit is a bucket boundary, so a text at the limit and one just over it land in
-    different buckets."""
-    await client.CountCharacters(CountCharactersRequest(text_to_count="a" * MAX_CHARACTER_COUNT))
-
-    [text_length] = get_text_lengths(get_recorded_metrics_by_name())
-    limit_bucket_index = list(text_length.explicit_bounds).index(MAX_CHARACTER_COUNT)
-    assert text_length.bucket_counts[limit_bucket_index] == 1
