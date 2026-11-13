@@ -23,15 +23,18 @@ async def test_counted_text_length_is_recorded(
 ) -> None:
     """Each counted text adds its length to the histogram, so the dashboard can show the
     distribution of lengths and the number of requests."""
+    word_1 = "hello"
+    word_2 = "hello world"
+
     await client.CountCharacters(CountCharactersRequest(text_to_count="hello"))
     await client.CountCharacters(CountCharactersRequest(text_to_count="hello world"))
 
     [text_length] = get_text_lengths(get_recorded_metrics_by_name())
     assert text_length.attributes == {"is_over_limit": False}
     assert text_length.count == 2
-    assert text_length.sum == 16
-    assert text_length.min == 5
-    assert text_length.max == 11
+    assert text_length.sum == len(word_1) + len(word_2)
+    assert text_length.min == min(len(word_1), len(word_2))
+    assert text_length.max == max(len(word_1), len(word_2))
 
 
 async def test_rejected_text_length_is_recorded_as_over_limit(
