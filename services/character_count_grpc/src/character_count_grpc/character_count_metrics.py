@@ -15,11 +15,11 @@ text_length_histogram = get_meter(__name__).create_histogram(
 )
 
 
-def record_text_length(character_count: int, error_type: str | None = None) -> None:
+def record_text_length(character_count: int, is_over_limit: bool = False) -> None:
     """Record the length of a text sent to be counted.
 
-    A rejected text is recorded with error.type, so rejected requests can be told apart
+    A text over the limit is recorded with error.type, so rejected requests can be told apart
     from counted ones. Each recording is also one request in the histogram's count.
     """
-    attributes = {} if error_type is None else {"error.type": error_type}
+    attributes = {"error.type": TEXT_TOO_LONG_ERROR_TYPE} if is_over_limit else {}
     text_length_histogram.record(character_count, attributes)
