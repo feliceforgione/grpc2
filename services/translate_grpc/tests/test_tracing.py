@@ -14,7 +14,7 @@ from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.language_name import LanguageName
 
 VALID_TEXT = "hello"
-VALID_TEXT_LENGTH = 5
+VALID_TEXT_LENGTH = len(VALID_TEXT)
 VALID_LANGUAGE = LanguageName.ITALIAN
 VALID_TRANSLATE_REQUEST = TranslateRequest(text=VALID_TEXT, language=LANGUAGE_ITALIAN)
 
