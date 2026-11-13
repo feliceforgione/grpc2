@@ -31,6 +31,13 @@ class CharacterCounter(CharacterCounterServicer):
         character_count = len(request.text_to_count)
         if character_count > MAX_CHARACTER_COUNT:
             record_text_length(character_count, TEXT_TOO_LONG_ERROR_TYPE)
+            # A warning rather than an error, since it's the caller's mistake and records at
+            # ERROR and above also go to Sentry. Logs the length rather than the text.
+            logging.warning(
+                "Rejected a text of %d characters; the maximum is %d",
+                character_count,
+                MAX_CHARACTER_COUNT,
+            )
             # abort() raises, so the RPC ends here with an INVALID_ARGUMENT status.
             await context.abort(
                 StatusCode.INVALID_ARGUMENT,
