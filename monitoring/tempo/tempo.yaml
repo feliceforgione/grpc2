@@ -23,5 +23,32 @@ storage:
     local:
       path: /var/tempo/blocks
 
+# The metrics-generator turns spans into metrics as they arrive. Its service
+# graph processor pairs each gRPC client span with the server span it called,
+# and counts the calls, failures and latency per caller and callee, labelled
+# client and server (traces_service_graph_request_*). Grafana draws them as a
+# graph of which service calls which. It sends them to Prometheus's
+# remote-write receiver, turned on by --web.enable-remote-write-receiver in
+# compose.yaml.
+metrics_generator:
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+  processor:
+    service_graphs:
+      # Latency buckets in seconds. The default starts at 0.1s, which puts
+      # every character count call in the first bucket; these also reach the
+      # several seconds a translation by the model can take.
+      histogram_buckets:
+        [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30]
+
+# Turns the service graph processor on. The services send no tenant ID, so
+# all their spans belong to the single tenant these defaults apply to.
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs]
+
 usage_report:
   reporting_enabled: false
