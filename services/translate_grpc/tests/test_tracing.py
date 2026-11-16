@@ -8,13 +8,13 @@ from grpc_health.v1.health_pb2_grpc import HealthStub
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.trace import SpanKind, StatusCode
 
+from character_count_proto.character_counter_pb2 import CountCharactersResponse
 from translate_grpc.translation import translate_text
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest
 from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.language_name import LanguageName
 
 VALID_TEXT = "hello"
-VALID_TEXT_LENGTH = len(VALID_TEXT)
 VALID_LANGUAGE = LanguageName.ITALIAN
 VALID_TRANSLATE_REQUEST = TranslateRequest(text=VALID_TEXT, language=LANGUAGE_ITALIAN)
 
@@ -30,6 +30,26 @@ async def test_translate_records_a_server_span(
 
     server_span = get_finished_spans_by_kind()[SpanKind.SERVER]
     assert server_span.name == "/translator.v1.Translation/Translate"
+
+
+async def test_translate_server_span_records_the_character_count(
+    mock_translation_provider: Mock,
+    mock_character_count_grpc_client: Mock,
+    translate_grpc_channel: grpc.aio.Channel,
+    get_finished_spans_by_kind: Callable[[], dict[SpanKind, ReadableSpan]],
+) -> None:
+    """The text length on the span is the character count service's, not a len() of its own."""
+    mock_translation_provider.request_translation.return_value = "mock"
+    character_count = 7
+    mock_character_count_grpc_client.CountCharacters.return_value = CountCharactersResponse(
+        character_count=character_count
+    )
+
+    await TranslationStub(translate_grpc_channel).Translate(VALID_TRANSLATE_REQUEST)  # type: ignore[no-untyped-call]
+
+    server_span = get_finished_spans_by_kind()[SpanKind.SERVER]
+    assert server_span.attributes is not None
+    assert server_span.attributes["translation.text_length"] == character_count
 
 
 async def test_translate_span_joins_the_callers_trace(
@@ -85,16 +105,14 @@ async def test_openai_call_records_client_span_under_the_server_span(
     assert client_span.parent.span_id == server_span.context.span_id
 
 
-def test_openai_span_records_model_language_and_text_lengths(
+def test_openai_span_records_model_language_and_answer_length(
     mock_translation_provider: Mock,
     get_finished_spans: Callable[[], tuple[ReadableSpan, ...]],
 ) -> None:
     """The span uses the GenAI semantic conventions' names, and never records the text itself."""
     mock_translation_provider.request_translation.return_value = ' "mock"\n'
 
-    translate_text(
-        mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
-    )
+    translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
 
     [span] = get_finished_spans()
     assert span.name == f"chat {mock_translation_provider.MODEL}"
@@ -104,7 +122,6 @@ def test_openai_span_records_model_language_and_text_lengths(
         "gen_ai.provider.name": mock_translation_provider.PROVIDER_NAME,
         "gen_ai.request.model": mock_translation_provider.MODEL,
         "translation.target_language": VALID_LANGUAGE,
-        "translation.text_length": VALID_TEXT_LENGTH,
         # Measured before strip_added_quotes, so it is the length the provider sent back.
         "translation.answer_length": len(' "mock"\n'),
     }
@@ -117,9 +134,7 @@ def test_openai_span_records_failed_call_as_error(
     mock_translation_provider.request_translation.side_effect = RuntimeError("upstream failure")
 
     with pytest.raises(RuntimeError):
-        translate_text(
-            mock_translation_provider, VALID_TEXT, VALID_LANGUAGE, text_length=VALID_TEXT_LENGTH
-        )
+        translate_text(mock_translation_provider, VALID_TEXT, VALID_LANGUAGE)
 
     [span] = get_finished_spans()
     assert span.status.status_code == StatusCode.ERROR

@@ -20,12 +20,12 @@ class TranslationTrace:
 
 @contextmanager
 def trace_translation(
-    provider: str, model: str, text_length: int, target_language: LanguageName
+    provider: str, model: str, target_language: LanguageName
 ) -> Generator[TranslationTrace]:
     """Record the model call made inside the with-block as a span named per the GenAI conventions.
 
-    The span holds the text lengths, not the text, so users' text stays out of the traces.
-    text_length is the text's character count, from the character count service.
+    The span holds the answer's length, not its text, so users' text stays out of the traces.
+    The input text's length is on the RPC's server span, set by the Translator servicer.
     An error raised in the with-block marks it as failed.
 
     The gen_ai.* names are written out because opentelemetry-semantic-conventions deprecated
@@ -41,7 +41,6 @@ def trace_translation(
             "gen_ai.provider.name": provider,
             "gen_ai.request.model": model,
             "translation.target_language": target_language,
-            "translation.text_length": text_length,
         },
     ) as span:
         yield TranslationTrace(span)

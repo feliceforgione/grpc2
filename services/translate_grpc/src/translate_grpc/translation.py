@@ -28,15 +28,10 @@ def translate_text(
     translation_provider: TranslationProvider,
     text: str,
     target_language: LanguageName = LanguageName.ENGLISH,
-    *,
-    text_length: int,
 ) -> str:
-    """Translate text into the target language with the given provider.
-
-    text_length is the text's character count, from the character count service.
-    """
+    """Translate text into the target language with the given provider."""
     with count_translation(target_language):
-        translation = _request_translation(translation_provider, text, target_language, text_length)
+        translation = _request_translation(translation_provider, text, target_language)
     return strip_added_quotes(text, translation)
 
 
@@ -44,7 +39,6 @@ def _request_translation(
     translation_provider: TranslationProvider,
     text: str,
     target_language: LanguageName,
-    text_length: int,
 ) -> str:
     """Ask the provider for a translation inside a span, and return its answer as is."""
     # The provider calls aren't traced by an instrumentation library (deep_translator uses
@@ -53,7 +47,6 @@ def _request_translation(
     with trace_translation(
         translation_provider.PROVIDER_NAME,
         translation_provider.MODEL,
-        text_length,
         target_language,
     ) as trace:
         translation = translation_provider.request_translation(text, target_language)

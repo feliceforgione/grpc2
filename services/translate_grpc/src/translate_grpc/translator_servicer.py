@@ -5,6 +5,7 @@ import logging
 import grpc
 import grpc.aio
 from grpc.aio import AioRpcError
+from opentelemetry.trace import get_current_span
 
 from character_count_proto.character_counter_pb2 import (
     CountCharactersRequest,
@@ -40,10 +41,11 @@ class Translator(TranslationServicer):
         # Counted before the model is called, so a text over the character limit is rejected
         # without paying for its translation.
         text_length = await self._count_characters(request.text, context)
+        # Set on the RPC's server span, which is current here, so the count service's number
+        # is in the trace without the translation code having to know about the count.
+        get_current_span().set_attribute("translation.text_length", text_length)
         try:
-            translated_text = translate_text(
-                self._translation_provider, request.text, language, text_length=text_length
-            )
+            translated_text = translate_text(self._translation_provider, request.text, language)
         except Exception:
             # Logged here, while the RPC's span is still current, so the error in Loki and
             # Sentry carries its trace ID. gRPC logs it again once the span has ended, which
