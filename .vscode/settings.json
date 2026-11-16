@@ -15,5 +15,11 @@
     {
       "text": "Follow Conventional Commits as described in .gitmessage. The first line is `<type>(<scope>): <short summary>`: a type from the list, an optional scope, then a lowercase summary in the imperative mood with no full stop, 72 characters at most. Leave a blank line, then a body that explains why the change was needed and what it does, wrapped at 72 characters. Don't output the placeholder lines or the comment lines from the template."
     }
+  ],
+  "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
+    { "file": ".gitmessage" },
+    {
+      "text": "The pull request title must be a Conventional Commit, because a squash merge uses it as the commit message on main and the `PR title` workflow rejects anything else. Write it as `<type>(<scope>): <summary>`: a type from the list in .gitmessage, a scope such as translate-grpc, web-api, proto, utils or monitoring, then a summary that starts with a lowercase verb in the imperative mood and has no full stop, 72 characters at most, e.g. `feat(translate-grpc): count characters with the character count service`. Never write a title like `Add the translate route`. In the description, explain why the change was needed and what it does. Don't output the placeholder lines or the comment lines from .gitmessage."
+    }
   ]
 }
