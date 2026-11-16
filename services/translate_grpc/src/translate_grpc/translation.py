@@ -36,14 +36,18 @@ def translate_text(
 
 
 def _request_translation(
-    translation_provider: TranslationProvider, text: str, target_language: LanguageName
+    translation_provider: TranslationProvider,
+    text: str,
+    target_language: LanguageName,
 ) -> str:
     """Ask the provider for a translation inside a span, and return its answer as is."""
     # The provider calls aren't traced by an instrumentation library (deep_translator uses
     # the pre-1.0 openai package, which OpenTelemetry's OpenAI instrumentation doesn't
     # support), so the call is traced by hand.
     with trace_translation(
-        translation_provider.PROVIDER_NAME, translation_provider.MODEL, text, target_language
+        translation_provider.PROVIDER_NAME,
+        translation_provider.MODEL,
+        target_language,
     ) as trace:
         translation = translation_provider.request_translation(text, target_language)
         trace.record_answer(translation)

@@ -22,3 +22,6 @@ private/
 
 # Claude Code instructions
 CLAUDE.md
+
+# Other
+.vscode/

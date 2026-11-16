@@ -67,7 +67,7 @@ Each service has its own image, built from the Dockerfile in its folder, and `co
 docker compose -f compose.yaml -f compose.local.yaml up --build
 ```
 
-The API is published at http://127.0.0.1:8000/. The translate gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). The character count gRPC server is reachable by any service at `character-count-grpc:50052` on the compose network (or on `CHARACTER_COUNT_GRPC_SERVER_PORT`, when set in `.env`); `compose.local.yaml` also publishes it on `127.0.0.1:50052`, so you can call it from your machine. Stop everything with `docker compose down`.
+The API is published at http://127.0.0.1:8000/. The translate gRPC server is only reachable by the API, which finds it at `translate-grpc:50051` on the compose network (or on `TRANSLATE_GRPC_SERVER_PORT`, when set in `.env`). The character count gRPC server, which the translate gRPC server calls to count each text before translating it, is reachable by any service at `character-count-grpc:50052` on the compose network (or on `CHARACTER_COUNT_GRPC_SERVER_PORT`, when set in `.env`); `compose.local.yaml` also publishes it on `127.0.0.1:50052`, so you can call it from your machine. Stop everything with `docker compose down`.
 
 #### Health checks
 
