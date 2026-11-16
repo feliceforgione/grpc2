@@ -74,7 +74,8 @@ class Translator(TranslationServicer):
         the character limit reaches the caller as INVALID_ARGUMENT.
         """
         try:
-            # Given what's left of the caller's deadline, so the count can't outlast the RPC.
+            # Use the time remaining as the timeout so the count doesn't keep running
+            # once the caller has given up.
             count_characters_response: CountCharactersResponse = (
                 await self._character_count_grpc_client.CountCharacters(
                     CountCharactersRequest(text_to_count=text), timeout=context.time_remaining()
