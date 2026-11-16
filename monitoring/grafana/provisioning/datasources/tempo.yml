@@ -12,6 +12,11 @@ datasources:
     jsonData:
       streamingEnabled:
         search: true
+      # The service graph reads the traces_service_graph_* metrics Tempo's
+      # metrics-generator writes to Prometheus, so Tempo's service graph
+      # queries and Explore's Service Graph tab know where to find them.
+      serviceMap:
+        datasourceUid: prometheus
       # Each span links to the log lines both services wrote during its trace.
       # They match on the trace_id structured metadata Loki keeps for OTLP logs,
       # rather than searching the log text for the ID. The time shifts widen

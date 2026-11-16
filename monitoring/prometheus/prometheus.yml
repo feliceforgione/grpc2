@@ -1,6 +1,9 @@
 # The services push their metrics to Prometheus's OTLP receiver, turned on by
 # --web.enable-otlp-receiver in compose.yaml, so they have no /metrics endpoint
-# to scrape. Prometheus keeps the samples as time series for Grafana to query.
+# to scrape. Tempo writes the service graph metrics it makes from the spans
+# through the remote-write receiver, turned on by
+# --web.enable-remote-write-receiver. Prometheus keeps the samples as time
+# series for Grafana to query.
 global:
   scrape_interval: 15s
 
