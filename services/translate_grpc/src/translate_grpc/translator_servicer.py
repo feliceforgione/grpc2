@@ -78,11 +78,9 @@ class Translator(TranslationServicer):
                     CountCharactersRequest(text_to_count=text), timeout=context.time_remaining()
                 )
             )
-        except AioRpcError as count_characters_error:
+        except AioRpcError as exc:
             # abort() raises, so the RPC ends here.
-            await context.abort(
-                count_characters_error.code(), count_characters_error.details() or ""
-            )
+            await context.abort(exc.code(), exc.details() or "")
         return count_characters_response.character_count
 
     async def _validate_request_language(
