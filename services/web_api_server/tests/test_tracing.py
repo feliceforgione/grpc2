@@ -9,8 +9,8 @@ from opentelemetry.trace import SpanKind
 
 from translate_proto.translator_pb2 import TranslateResponse
 from translate_proto.translator_pb2_grpc import TranslationStub
+from utils.grpc_channel import open_grpc_channel
 from utils.language_name import LanguageName
-from web_api_server.grpc_channel import open_translate_grpc_channel
 from web_api_server.main import app
 
 TRANSLATE_URL = "/api/translate/"
@@ -73,7 +73,7 @@ async def mock_translation_servicer_behind_app(
     Going through that channel is what makes the test cover its tracing interceptors.
     """
     mock_translation_servicer.Translate.return_value = TranslateResponse(translated_text="ciao")
-    async with open_translate_grpc_channel(mock_translation_servicer.address) as grpc_channel:
+    async with open_grpc_channel(mock_translation_servicer.address) as grpc_channel:
         set_translate_grpc_client(TranslationStub(grpc_channel))  # type: ignore[no-untyped-call]
         yield mock_translation_servicer
 

@@ -15,7 +15,7 @@ from grpc.aio import AioRpcError
 
 from translate_proto.translator_pb2 import LANGUAGE_ITALIAN, TranslateRequest, TranslateResponse
 from translate_proto.translator_pb2_grpc import TranslationStub
-from web_api_server.grpc_channel import MAX_ATTEMPTS, open_translate_grpc_channel
+from utils.grpc_channel import MAX_ATTEMPTS, open_grpc_channel
 from web_api_server.routers.translate import GRPC_TIMEOUT_SECONDS
 
 VALID_TRANSLATE_REQUEST = TranslateRequest(text="hello", language=LANGUAGE_ITALIAN)
@@ -24,7 +24,7 @@ VALID_TRANSLATED_TEXT = "ciao"
 
 async def call_translate_service(server_address: str) -> TranslateResponse:
     """Call Translate through the same channel the web API server opens."""
-    async with open_translate_grpc_channel(server_address) as grpc_channel:
+    async with open_grpc_channel(server_address) as grpc_channel:
         translate_grpc_client = TranslationStub(grpc_channel)  # type: ignore[no-untyped-call]
         translate_grpc_response: TranslateResponse = await translate_grpc_client.Translate(
             VALID_TRANSLATE_REQUEST, timeout=GRPC_TIMEOUT_SECONDS

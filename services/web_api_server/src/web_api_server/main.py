@@ -14,8 +14,8 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from translate_proto.translator_pb2_grpc import TranslationStub
 from utils.constants import LOOPBACK_IPV4, TRANSLATE_GRPC_SERVER_PORT
 from utils.error_tracking import setup_error_tracking, tag_request_errors_with_trace
+from utils.grpc_channel import open_grpc_channel
 from utils.telemetry import setup_telemetry
-from web_api_server.grpc_channel import open_translate_grpc_channel
 from web_api_server.grpc_errors import handle_grpc_error_response
 from web_api_server.routers import (
     WEBSITE_STATIC_DIR,
@@ -35,7 +35,7 @@ WEB_API_SERVER_PORT = int(os.environ.get("WEB_API_SERVER_PORT", "8000"))
 @asynccontextmanager
 async def app_lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None]:
     """Open one gRPC channel for the app's lifetime and share it across requests."""
-    async with open_translate_grpc_channel(TRANSLATE_GRPC_SERVER_ADDRESS) as grpc_channel:
+    async with open_grpc_channel(TRANSLATE_GRPC_SERVER_ADDRESS) as grpc_channel:
         fastapi_app.state.translate_grpc_client = TranslationStub(grpc_channel)  # type: ignore[no-untyped-call]
         yield
 
