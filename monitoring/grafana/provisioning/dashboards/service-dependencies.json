@@ -34,7 +34,7 @@
         "spec": {
           "id": 1,
           "title": "Service graph",
-          "description": "Which service calls which, from the traces. Each arrow points from a client to a server it calls over gRPC. A called service shows its average response time and calls per second, and the red part of its ring is the share of calls that failed. Click a node for links to its traces.",
+          "description": "Which service sends requests to which, from the traces. Each arrow points from a client to a server it sends gRPC requests to. A server shows its average response time and requests per second, and the red part of its ring is the share of requests that failed. Click a node for links to its traces.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -85,8 +85,8 @@
         "kind": "Panel",
         "spec": {
           "id": 2,
-          "title": "Call rate",
-          "description": "Calls per second from each client to each server it calls.",
+          "title": "Request rate",
+          "description": "Requests per second from each client to each server it sends requests to.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -147,8 +147,8 @@
         "kind": "Panel",
         "spec": {
           "id": 3,
-          "title": "Failed call share",
-          "description": "Share of each client's calls to each server that failed, from the server span's error status. Gaps mean there were no calls.",
+          "title": "Failed request share",
+          "description": "Share of each client's requests to each server that failed, from the server span's error status. Gaps mean there were no requests.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -210,8 +210,8 @@
         "kind": "Panel",
         "spec": {
           "id": 4,
-          "title": "Call latency, 95th percentile",
-          "description": "95th percentile time the server took to handle each client's calls. Estimated from the histogram buckets, so a value is only as precise as its bucket. Gaps mean there were no calls.",
+          "title": "Request latency, 95th percentile",
+          "description": "95th percentile time the server took to handle each client's requests. Estimated from the histogram buckets, so a value is only as precise as its bucket. Gaps mean there were no requests.",
           "links": [],
           "data": {
             "kind": "QueryGroup",

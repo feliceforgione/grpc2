@@ -27,9 +27,16 @@ storage:
 # graph processor pairs each gRPC client span with the server span it called,
 # and counts the calls, failures and latency per caller and callee, labelled
 # client and server (traces_service_graph_request_*). Grafana draws them as a
-# graph of which service calls which. It sends them to Prometheus's
-# remote-write receiver, turned on by --web.enable-remote-write-receiver in
-# compose.yaml.
+# graph of which service calls which. Its span metrics processor counts every
+# server and client span, and its latency, per service, span name, kind and
+# status (traces_spanmetrics_*), which covers requests with no server span to
+# pair with, such as translate-grpc's requests to OpenAI. It sends them to
+# Prometheus's remote-write receiver, turned on by
+# --web.enable-remote-write-receiver in compose.yaml.
+#
+# Both count every span Tempo receives, so the counts are exact only while the
+# services send every span. If traces are ever sampled, make these metrics
+# before the sampling instead, e.g. in an OpenTelemetry Collector.
 metrics_generator:
   storage:
     path: /var/tempo/generator/wal
@@ -42,13 +49,32 @@ metrics_generator:
       # several seconds a translation by the model can take.
       histogram_buckets:
         [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30]
+    span_metrics:
+      # The same buckets as the service graph, so their latencies compare.
+      histogram_buckets:
+        [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30]
+      # The gRPC status code each request ended with, so a rejected request
+      # (INVALID_ARGUMENT) can be told apart from a failure (UNKNOWN).
+      # Prometheus gets it as rpc_grpc_status_code.
+      dimensions:
+        - rpc.grpc.status_code
+      # Only requests between services: server and client spans. The
+      # internal spans, such as the ASGI http send and receive spans FastAPI
+      # adds, would only add series nobody queries.
+      filter_policies:
+        - include:
+            match_type: regex
+            attributes:
+              - key: kind
+                value: SPAN_KIND_(SERVER|CLIENT)
 
-# Turns the service graph processor on. The services send no tenant ID, so
-# all their spans belong to the single tenant these defaults apply to.
+# Turns the service graph and span metrics processors on. The services send no
+# tenant ID, so all their spans belong to the single tenant these defaults
+# apply to.
 overrides:
   defaults:
     metrics_generator:
-      processors: [service-graphs]
+      processors: [service-graphs, span-metrics]
 
 usage_report:
   reporting_enabled: false
