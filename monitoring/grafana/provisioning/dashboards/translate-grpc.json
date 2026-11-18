@@ -2,7 +2,7 @@
   "apiVersion": "dashboard.grafana.app/v2",
   "kind": "Dashboard",
   "metadata": {
-    "name": "web-api-requests"
+    "name": "translate-grpc"
   },
   "spec": {
     "annotations": [
@@ -34,7 +34,7 @@
         "spec": {
           "id": 1,
           "title": "Availability",
-          "description": "Share of responses in the selected time range that were not server errors (5xx). Client errors (4xx) count as available.",
+          "description": "Share of Translate requests in the selected time range that the service didn't fail. A request rejected for its input, such as a text over the character limit, is the client's mistake, so it counts as available. A request that never reached the service isn't counted.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -51,7 +51,7 @@
                         "name": "prometheus"
                       },
                       "spec": {
-                        "expr": "sum(increase(http_server_request_duration_seconds_count{job=\"web-api-server\", http_response_status_code!~\"5..\"}[$__range])) / sum(increase(http_server_request_duration_seconds_count{job=\"web-api-server\"}[$__range]))",
+                        "expr": "sum(increase(traces_spanmetrics_calls_total{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\", status_code!=\"STATUS_CODE_ERROR\"}[$__range])) / sum(increase(traces_spanmetrics_calls_total{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\"}[$__range]))",
                         "instant": true
                       }
                     },
@@ -122,7 +122,7 @@
         "spec": {
           "id": 2,
           "title": "Availability over time",
-          "description": "Share of responses that were not server errors (5xx), over time. Gaps mean there was no traffic.",
+          "description": "Share of Translate requests the service didn't fail, over time. Rejected requests count as available, as in Availability. Gaps mean there were no requests.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -139,8 +139,7 @@
                         "name": "prometheus"
                       },
                       "spec": {
-                        "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"web-api-server\", http_response_status_code!~\"5..\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{job=\"web-api-server\"}[$__rate_interval]))",
-                        "legendFormat": "availability"
+                        "expr": "sum(rate(traces_spanmetrics_calls_total{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\", status_code!=\"STATUS_CODE_ERROR\"}[$__rate_interval])) / sum(rate(traces_spanmetrics_calls_total{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\"}[$__rate_interval]))"
                       }
                     },
                     "refId": "A",
@@ -230,32 +229,7 @@
                     }
                   }
                 },
-                "overrides": [
-                  {
-                    "__systemRef": "hideSeriesFrom",
-                    "matcher": {
-                      "id": "byNames",
-                      "options": {
-                        "mode": "exclude",
-                        "names": [
-                          "availability"
-                        ],
-                        "prefix": "All except:",
-                        "readOnly": true
-                      }
-                    },
-                    "properties": [
-                      {
-                        "id": "custom.hideFrom",
-                        "value": {
-                          "legend": false,
-                          "tooltip": true,
-                          "viz": true
-                        }
-                      }
-                    ]
-                  }
-                ]
+                "overrides": []
               }
             }
           }
@@ -265,8 +239,8 @@
         "kind": "Panel",
         "spec": {
           "id": 3,
-          "title": "Translate response time",
-          "description": "How long POST /api/translate/ takes, including the call to the translate service.",
+          "title": "Response time",
+          "description": "50th, 95th and 99th percentile time the service took to handle a Translate request, counting the character count and OpenAI requests it makes. Estimated from the histogram buckets, so a value is only as precise as its bucket.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -284,7 +258,7 @@
                       },
                       "spec": {
                         "editorMode": "builder",
-                        "expr": "histogram_quantile(0.5, sum by (le) (rate(http_server_request_duration_seconds_bucket{job=\"web-api-server\", http_route=\"/api/translate/\"}[$__rate_interval])))",
+                        "expr": "histogram_quantile(0.5, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\"}[$__rate_interval])))",
                         "legendFormat": "p50",
                         "range": true
                       }
@@ -304,8 +278,10 @@
                         "name": "prometheus"
                       },
                       "spec": {
-                        "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{job=\"web-api-server\", http_route=\"/api/translate/\"}[$__rate_interval])))",
-                        "legendFormat": "p95"
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\"}[$__rate_interval])))",
+                        "legendFormat": "p95",
+                        "range": true
                       }
                     },
                     "refId": "B",
@@ -323,8 +299,10 @@
                         "name": "prometheus"
                       },
                       "spec": {
-                        "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_request_duration_seconds_bucket{job=\"web-api-server\", http_route=\"/api/translate/\"}[$__rate_interval])))",
-                        "legendFormat": "p99"
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\"}[$__rate_interval])))",
+                        "legendFormat": "p99",
+                        "range": true
                       }
                     },
                     "refId": "C",
@@ -418,8 +396,8 @@
         "kind": "Panel",
         "spec": {
           "id": 4,
-          "title": "Requests by route and status code",
-          "description": "Requests per second to each route, by status code. Unknown URLs have no route.",
+          "title": "Requests by status code",
+          "description": "Translate requests per second, by the gRPC status code the service answered with. INVALID_ARGUMENT is a rejected request, such as a text over the character limit; UNKNOWN is a failed translation.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -437,8 +415,8 @@
                       },
                       "spec": {
                         "editorMode": "builder",
-                        "expr": "sum by (http_request_method, http_route, http_response_status_code) (rate(http_server_request_duration_seconds_count{job=\"web-api-server\"}[$__rate_interval]))",
-                        "legendFormat": "{{http_request_method}} {{http_route}} {{http_response_status_code}}",
+                        "expr": "sum by (rpc_grpc_status_code) (rate(traces_spanmetrics_calls_total{service=\"translate-grpc\", span_kind=\"SPAN_KIND_SERVER\", span_name=\"/translator.v1.Translation/Translate\"}[$__rate_interval]))",
+                        "legendFormat": "{{rpc_grpc_status_code}}",
                         "range": true
                       }
                     },
@@ -525,26 +503,98 @@
                 },
                 "overrides": [
                   {
-                    "__systemRef": "hideSeriesFrom",
                     "matcher": {
-                      "id": "byNames",
-                      "options": {
-                        "mode": "exclude",
-                        "names": [
-                          "GET /api/languages 200"
-                        ],
-                        "prefix": "All except:",
-                        "readOnly": true
-                      }
+                      "id": "byName",
+                      "options": "0"
                     },
                     "properties": [
                       {
-                        "id": "custom.hideFrom",
-                        "value": {
-                          "legend": false,
-                          "tooltip": true,
-                          "viz": true
-                        }
+                        "id": "displayName",
+                        "value": "OK"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "1"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "CANCELLED"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "2"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "UNKNOWN"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "3"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "INVALID_ARGUMENT"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "4"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "DEADLINE_EXCEEDED"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "8"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "RESOURCE_EXHAUSTED"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "13"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "INTERNAL"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "14"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "UNAVAILABLE"
                       }
                     ]
                   }
@@ -558,8 +608,377 @@
         "kind": "Panel",
         "spec": {
           "id": 5,
+          "title": "Requests by status code",
+          "description": "Requests per second to the character count service, by the gRPC status code it answered with. INVALID_ARGUMENT is a text over the character limit, which ends the Translate request before OpenAI is asked.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "editorMode": "builder",
+                        "expr": "sum by (rpc_grpc_status_code) (rate(traces_spanmetrics_calls_total{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=\"/character_count.v1.CharacterCounter/CountCharacters\"}[$__rate_interval]))",
+                        "legendFormat": "{{rpc_grpc_status_code}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.2.4",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "reqps",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "0"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "OK"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "1"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "CANCELLED"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "2"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "UNKNOWN"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "3"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "INVALID_ARGUMENT"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "4"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "DEADLINE_EXCEEDED"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "8"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "RESOURCE_EXHAUSTED"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "13"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "INTERNAL"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "14"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "UNAVAILABLE"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-6": {
+        "kind": "Panel",
+        "spec": {
+          "id": 6,
+          "title": "Response time",
+          "description": "50th, 95th and 99th percentile time a request to the character count service took, as this service saw it, including the network. Estimated from the histogram buckets.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.5, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=\"/character_count.v1.CharacterCounter/CountCharacters\"}[$__rate_interval])))",
+                        "legendFormat": "p50",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=\"/character_count.v1.CharacterCounter/CountCharacters\"}[$__rate_interval])))",
+                        "legendFormat": "p95",
+                        "range": true
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=\"/character_count.v1.CharacterCounter/CountCharacters\"}[$__rate_interval])))",
+                        "legendFormat": "p99",
+                        "range": true
+                      }
+                    },
+                    "refId": "C",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.2.4",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-7": {
+        "kind": "Panel",
+        "spec": {
+          "id": 7,
           "title": "Translations by language",
-          "description": "Translations in the selected time range, per target language, failed ones included.",
+          "description": "Translations requested from OpenAI in the selected time range, per target language, failed ones included. Requests rejected before OpenAI is asked aren't counted.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -623,12 +1042,12 @@
           }
         }
       },
-      "panel-6": {
+      "panel-8": {
         "kind": "Panel",
         "spec": {
-          "id": 6,
+          "id": 8,
           "title": "Translation rate by language",
-          "description": "Translations per second, per target language.",
+          "description": "Translations requested from OpenAI per second, per target language.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -685,12 +1104,12 @@
           }
         }
       },
-      "panel-7": {
+      "panel-9": {
         "kind": "Panel",
         "spec": {
-          "id": 7,
-          "title": "Failed translations",
-          "description": "Failed calls to the model per second, by error type and target language.",
+          "id": 9,
+          "title": "Response time",
+          "description": "50th, 95th and 99th percentile time OpenAI took to answer a translation request. It's most of a Translate request's response time. Estimated from the histogram buckets.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -707,11 +1126,55 @@
                         "name": "prometheus"
                       },
                       "spec": {
-                        "expr": "sum by (error_type, translation_target_language) (rate(translations_total{job=\"translate-grpc\", error_type!=\"\"}[$__rate_interval]))",
-                        "legendFormat": "{{error_type}} {{translation_target_language}}"
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.5, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=~\"chat .+\"}[$__rate_interval])))",
+                        "legendFormat": "p50",
+                        "range": true
                       }
                     },
                     "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=~\"chat .+\"}[$__rate_interval])))",
+                        "legendFormat": "p95",
+                        "range": true
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "editorMode": "builder",
+                        "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"translate-grpc\", span_kind=\"SPAN_KIND_CLIENT\", span_name=~\"chat .+\"}[$__rate_interval])))",
+                        "legendFormat": "p99",
+                        "range": true
+                      }
+                    },
+                    "refId": "C",
                     "hidden": false
                   }
                 }
@@ -727,20 +1190,70 @@
             "spec": {
               "options": {
                 "legend": {
+                  "calcs": [],
                   "displayMode": "list",
                   "placement": "bottom",
                   "showLegend": true
                 },
                 "tooltip": {
-                  "mode": "multi",
-                  "sort": "desc"
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
                 }
               },
               "fieldConfig": {
                 "defaults": {
-                  "unit": "short",
-                  "min": 0,
-                  "noValue": "No failures"
+                  "unit": "s",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
                 },
                 "overrides": []
               }
@@ -748,12 +1261,12 @@
           }
         }
       },
-      "panel-8": {
+      "panel-10": {
         "kind": "Panel",
         "spec": {
-          "id": 8,
-          "title": "Translation availability over time",
-          "description": "Share of translations that didn't fail, over time. Requests for unsupported languages are rejected before translation, so they aren't counted. Gaps mean there were no translations.",
+          "id": 10,
+          "title": "Translation success rate",
+          "description": "Share of translation requests to OpenAI that returned a translation, over time. Requests rejected before OpenAI is asked aren't counted. Gaps mean there were no translations.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -892,12 +1405,75 @@
           }
         }
       },
-      "panel-9": {
+      "panel-11": {
         "kind": "Panel",
         "spec": {
-          "id": 9,
-          "title": "Log volume by service and level",
-          "description": "Log lines per interval from both services, by service and level. A rise in warn or error lines is the first thing to look for.",
+          "id": 11,
+          "title": "Failed translations",
+          "description": "Failed translation requests to OpenAI per second, by error type and target language.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "prometheus"
+                      },
+                      "spec": {
+                        "expr": "sum by (error_type, translation_target_language) (rate(translations_total{job=\"translate-grpc\", error_type!=\"\"}[$__rate_interval]))",
+                        "legendFormat": "{{error_type}} {{translation_target_language}}"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.2.4",
+            "spec": {
+              "options": {
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "min": 0,
+                  "noValue": "No failures"
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-12": {
+        "kind": "Panel",
+        "spec": {
+          "id": 12,
+          "title": "Log volume by level",
+          "description": "Log lines per interval from this service, by level. A rise in warn or error lines is the first thing to look for.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -914,9 +1490,9 @@
                         "name": "loki"
                       },
                       "spec": {
-                        "expr": "sum by (service_name, detected_level) (count_over_time({service_name=~\"web-api-server|translate-grpc\"} [$__auto]))",
+                        "expr": "sum by (detected_level) (count_over_time({service_name=\"translate-grpc\"} [$__auto]))",
                         "queryType": "range",
-                        "legendFormat": "{{service_name}} {{detected_level}}"
+                        "legendFormat": "{{detected_level}}"
                       }
                     },
                     "refId": "A",
@@ -964,12 +1540,12 @@
           }
         }
       },
-      "panel-10": {
+      "panel-13": {
         "kind": "Panel",
         "spec": {
-          "id": 10,
+          "id": 13,
           "title": "Warnings and errors",
-          "description": "Warning, error and critical log lines from both services, newest first. Open a line to see its details and the View trace link to the request that wrote it.",
+          "description": "Warning, error and critical log lines from this service, newest first. Open a line to see its details and the View trace link to the request that wrote it.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -986,7 +1562,7 @@
                         "name": "loki"
                       },
                       "spec": {
-                        "expr": "{service_name=~\"web-api-server|translate-grpc\"} | detected_level=~\"warn|error|critical|fatal\"",
+                        "expr": "{service_name=\"translate-grpc\"} | detected_level=~\"warn|error|critical|fatal\"",
                         "queryType": "range"
                       }
                     },
@@ -1023,12 +1599,12 @@
           }
         }
       },
-      "panel-11": {
+      "panel-14": {
         "kind": "Panel",
         "spec": {
-          "id": 11,
+          "id": 14,
           "title": "All logs",
-          "description": "Every log line from both services at INFO and above, newest first. The services send no DEBUG lines.",
+          "description": "Every log line from this service at INFO and above, newest first. The service sends no DEBUG lines.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -1045,7 +1621,7 @@
                         "name": "loki"
                       },
                       "spec": {
-                        "expr": "{service_name=~\"web-api-server|translate-grpc\"}",
+                        "expr": "{service_name=\"translate-grpc\"}",
                         "queryType": "range"
                       }
                     },
@@ -1090,7 +1666,7 @@
           {
             "kind": "TabsLayoutTab",
             "spec": {
-              "title": "Web API",
+              "title": "Server",
               "layout": {
                 "kind": "GridLayout",
                 "spec": {
@@ -1155,60 +1731,127 @@
           {
             "kind": "TabsLayoutTab",
             "spec": {
-              "title": "Translate service",
+              "title": "Client",
               "layout": {
-                "kind": "GridLayout",
+                "kind": "RowsLayout",
                 "spec": {
-                  "items": [
+                  "rows": [
                     {
-                      "kind": "GridLayoutItem",
+                      "kind": "RowsLayoutRow",
                       "spec": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 8,
-                        "height": 8,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-5"
+                        "title": "Character count service",
+                        "collapse": false,
+                        "layout": {
+                          "kind": "GridLayout",
+                          "spec": {
+                            "items": [
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 0,
+                                  "y": 0,
+                                  "width": 12,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-5"
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 12,
+                                  "y": 0,
+                                  "width": 12,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-6"
+                                  }
+                                }
+                              }
+                            ]
+                          }
                         }
                       }
                     },
                     {
-                      "kind": "GridLayoutItem",
+                      "kind": "RowsLayoutRow",
                       "spec": {
-                        "x": 8,
-                        "y": 0,
-                        "width": 16,
-                        "height": 8,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-6"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 12,
-                        "y": 8,
-                        "width": 12,
-                        "height": 8,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-7"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 0,
-                        "y": 8,
-                        "width": 12,
-                        "height": 8,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-8"
+                        "title": "OpenAI",
+                        "collapse": false,
+                        "layout": {
+                          "kind": "GridLayout",
+                          "spec": {
+                            "items": [
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 0,
+                                  "y": 0,
+                                  "width": 8,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-7"
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 8,
+                                  "y": 0,
+                                  "width": 16,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-8"
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 0,
+                                  "y": 8,
+                                  "width": 8,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-9"
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 8,
+                                  "y": 8,
+                                  "width": 8,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-10"
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "GridLayoutItem",
+                                "spec": {
+                                  "x": 16,
+                                  "y": 8,
+                                  "width": 8,
+                                  "height": 8,
+                                  "element": {
+                                    "kind": "ElementReference",
+                                    "name": "panel-11"
+                                  }
+                                }
+                              }
+                            ]
+                          }
                         }
                       }
                     }
@@ -1234,7 +1877,7 @@
                         "height": 7,
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-9"
+                          "name": "panel-12"
                         }
                       }
                     },
@@ -1247,7 +1890,7 @@
                         "height": 10,
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-10"
+                          "name": "panel-13"
                         }
                       }
                     },
@@ -1260,7 +1903,7 @@
                         "height": 12,
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-11"
+                          "name": "panel-14"
                         }
                       }
                     }
@@ -1296,7 +1939,7 @@
       "hideTimepicker": false,
       "fiscalYearStartMonth": 0
     },
-    "title": "Web API Requests",
+    "title": "Translate Service",
     "variables": []
   }
 }
